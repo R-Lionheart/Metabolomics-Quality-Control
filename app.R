@@ -40,33 +40,35 @@ ui <- fluidPage(
     
     mainPanel(
       tabsetPanel(type = "tabs",
-                  tabPanel("Information"),
+                  tabPanel("Information",
+                           
+                           h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"),
+                           div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
+                               style = "font-family: 'times'; font-sil6pt"),
+                           p("The application is split into two sections: targeted and untargeted metabolomic analysis, which can be accessed via the tabs at the top of the page (eventually).
+                              Within each section, choose between code for Thermo Q Exactive HF (Orbitrap) and a Waters Xevo TQ-S (triple quadrupole) mass spectrometers. The code will clean up your peaks.
+                              In fact, beneath this paragraph is a lovely visualization of that process.", 
+                             style = "font-family: 'times'; font-sil6pt"),
+                           img(src = "QC.png", height = 200, width = 200),
+                           br(),
+                           h4("LCMS Setup"),
+                           div(p(HTML(paste0("Samples should be run in the following manner for the quality control code and ", a(href = "https://github.com/IngallsLabUW/B-MIS-normalization", "B-MIS Normalization"), "- a process used for matching internal standards."))),
+                               style = "font-family: 'times'; font-sil6pt"),
+                           br(),
+                           p("Please label all samples in the following manner:", span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."), ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk).")),
+                             p("- Standards run (all mixed) at least once at the beginning and end of the run"),
+                             p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix"),
+                             p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank"),
+                             p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1"),
+                             p("- Samples. Example label: Date_Smp_AdditionalID_Rep"))),
+                  
                   tabPanel("Targeted"),
-                  tabPanel("Untargeted")),
-      h5("Eventually put in tabs here, one for Targeted and one for Untargeted"),
-      h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"),
-      div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
-          style = "font-family: 'times'; font-sil6pt"),
-      p("The application is split into two sections: targeted and untargeted metabolomic analysis, which can be accessed via the tabs at the top of the page (eventually).
-        Within each section, choose between code for Thermo Q Exactive HF (Orbitrap) and a Waters Xevo TQ-S (triple quadrupole) mass spectrometers. The code will clean up your peaks.
-        In fact, beneath this paragraph is a lovely visualization of that process.", 
-        style = "font-family: 'times'; font-sil6pt"),
-      img(src = "QC.png", height = 200, width = 200),
-      br(),
-      h4("LCMS Setup"),
-      div(p(HTML(paste0("Samples should be run in the following manner for the quality control code and ", a(href = "https://github.com/IngallsLabUW/B-MIS-normalization", "B-MIS Normalization"), "- a process used for matching internal standards."))),
-          style = "font-family: 'times'; font-sil6pt"),
-      br(),
-      p("Please label all samples in the following manner:", span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."), ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk).")),
-      p("- Standards run (all mixed) at least once at the beginning and end of the run"),
-      p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix"),
-      p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank"),
-      p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1"),
-      p("- Samples. Example label: Date_Smp_AdditionalID_Rep")
+                  tabPanel("Untargeted"))
+
+      
+              )
+          )
       )
-    )
-  )
-)
 
 
 server <- function(input, output) {
