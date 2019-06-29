@@ -39,6 +39,10 @@ ui <- fluidPage(
       )),
     
     mainPanel(
+      tabsetPanel(type = "tabs",
+                  tabPanel("Information", plotOutput("plot")),
+                  tabPanel("Targeted", verbatimTextOutput("summary")),
+                  tabPanel("Untargeted", tableOutput("table"))),
       h5("Eventually put in tabs here, one for Targeted and one for Untargeted"),
       h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"),
       div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
