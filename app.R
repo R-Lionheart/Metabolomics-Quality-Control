@@ -19,7 +19,7 @@ ui <- fluidPage(
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
       fileInput("skyline.file", h5("Skyline file input")),
-      fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv")),
+      fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
       helpText("Pick the minimum height to be counted as a 'real' peak (QE suggestion: HILIC - 1000, Cyano - 5000)"),
       sliderInput("area.min", h5("Area Minimum"), 
@@ -69,23 +69,34 @@ ui <- fluidPage(
         p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
                   
     tabPanel("Targeted",
-      textOutput("selected_var"),
-      textOutput("min_max")),
+      absolutePanel(top = 50, left = 0,  width = 400,
+        draggable = TRUE,
+        wellPanel(strong("Your Quality Control Parameters are:"),   
+        textOutput("machine"),
+        textOutput("minimum"),
+        textOutput("retention"),
+        textOutput("blank"),
+        textOutput("signal"),
+        textOutput("ppm"),
+        tags$head(tags$style())
+        )
+      )
+    ),
     tabPanel("Untargeted"))
     )
   )
 )
 
+  
+server = function(input, output) {
+    output$machine <- renderText({paste("Your machine type is", input$machine.type)})
+    output$minimum <- renderText({paste("You have selected", input$area.min, "as area.")})
+    output$retention <- renderText({paste("You have selected", input$retention, "as retention time flexibility.")})
+    output$blank <- renderText({paste("You have selected", input$blank, "as the blank ratio maximum.")})
+    output$signal <- renderText({paste("You have selected", input$signal, "as signal to noise flexibility.")})
+    output$ppm <- renderText({paste("You have selected", input$ppm, "as parts per million time flexibility.")})
+  }
 
-
-server <- function(input, output) {
-  output$selected_var <- renderText({
-    paste("You have selected", input$machine.type, "as machine type. Please ensure you have uploaded the correct accompanying file (see side panel for details).")
-  })
-  output$min_max <- renderText({
-    paste("You have selected", input$area.min, "as area.")
-  })
-}
 
 
 shinyApp(ui, server)
