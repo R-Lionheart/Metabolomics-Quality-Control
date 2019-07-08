@@ -19,7 +19,7 @@ ui <- fluidPage(
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
       fileInput("skyline.file", h5("Skyline file input")),
-      fileInput("supporting.file", h5("QE: Blank matcher csv, TQS: Master compound csv")),
+      fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv")),
       hr(),
       helpText("Pick the minimum height to be counted as a 'real' peak (QE suggestion: HILIC - 1000, Cyano - 5000)"),
       sliderInput("area.min", h5("Area Minimum"), 
@@ -59,12 +59,14 @@ ui <- fluidPage(
         div(p(HTML(paste0("Samples should be run in the following manner for the quality control code and ", a(href = "https://github.com/IngallsLabUW/B-MIS-normalization", "B-MIS Normalization"), "- a process used for matching internal standards."))),
           style = "font-family: 'times'; font-sil6pt"),
         br(),
-        p("Please label all samples in the following manner:", span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."), ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk).")),
-        p("- Standards run (all mixed) at least once at the beginning and end of the run"),
-        p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix"),
-        p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank"),
-        p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1"),
-        p("- Samples. Example label: Date_Smp_AdditionalID_Rep"))),
+        p("Please label all samples in the following manner:", style = "font-family: 'times'; font-sil6pt", span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."), 
+                                                                    ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk)."), 
+                                                                    style = "font-family: 'times'; font-sil6pt"),
+        p("- Standards run (all mixed) at least once at the beginning and end of the run", style = "font-family: 'times'; font-sil6pt"),
+        p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix", style = "font-family: 'times'; font-sil6pt"),
+        p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank", style = "font-family: 'times'; font-sil6pt"),
+        p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
+        p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
                   
     tabPanel("Targeted",
       textOutput("selected_var"),
@@ -75,11 +77,16 @@ ui <- fluidPage(
 )
 
 
+
 server <- function(input, output) {
-  output$selected_var <- renderText({ 
-    paste("You have selected", input$machine.type)
+  output$selected_var <- renderText({
+    paste("You have selected", input$machine.type, "as machine type. Please ensure you have uploaded the correct accompanying file (see side panel for details).")
+  })
+  output$min_max <- renderText({
+    paste("You have selected", input$area.min, "as area.")
   })
 }
+
 
 shinyApp(ui, server)
 
