@@ -1,6 +1,8 @@
 library(shiny)
+library(shinythemes)
 
 ui <- fluidPage(
+  #theme = shinytheme("darkly"),
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
@@ -22,7 +24,7 @@ ui <- fluidPage(
                    choices = c(Head = "head",
                                All = "all"),
                    selected = "head"),
-      fileInput("skyline.file", accept = c("text/csv", "text/comma-separated-values,text/plain",".csv"), h5("Skyline file input")),
+      fileInput("skyline.file", multiple = TRUE, accept = c("text/csv", "text/comma-separated-values,text/plain",".csv"), h5("Skyline file input")),
       fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
       helpText("Pick the minimum height to be counted as a 'real' peak (QE suggestion: HILIC - 1000, Cyano - 5000)"),
@@ -86,7 +88,8 @@ ui <- fluidPage(
         tags$head(tags$style())
         )
       ),
-      tableOutput("data")
+      tableOutput("data1"),
+      tableOutput("data2")
     ),
     tabPanel("Untargeted"))
     )
@@ -101,7 +104,7 @@ server = function(input, output) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-  output$data <- renderTable({file1 = input$skyline.file
+  output$data1 <- renderTable({file1 = input$skyline.file
     if (is.null(file1)) {
       return(NULL)
       }
@@ -111,16 +114,20 @@ server = function(input, output) {
       stop(safeError(e))
       }
     )
-    
     if (input$disp == "head") {
       return(head(df))
     }
     else {
       return(df)
     }
+  }, bordered = TRUE, caption = "Skyline Output File")
+  output$data2 <- renderTable({file2 = input$supporting.file
+    if (is.null(file2)) {
+      return(NULL)
+    }
+    read.csv(file2$datapath)
   })
 }
-
 
 shinyApp(ui, server)
 
