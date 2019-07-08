@@ -18,6 +18,10 @@ ui <- fluidPage(
       helpText("If you are analyzing files produced by the QE, upload a blank matcher csv here.
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
+      radioButtons("disp", "Display",
+                   choices = c(Head = "head",
+                               All = "all"),
+                   selected = "head"),
       fileInput("skyline.file", accept = c("text/csv", "text/comma-separated-values,text/plain",".csv"), h5("Skyline file input")),
       fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
@@ -91,19 +95,31 @@ ui <- fluidPage(
 
   
 server = function(input, output) {
-    output$machine <- renderText({paste("Your machine type is", input$machine.type, ".")})
-    output$minimum <- renderText({paste("You have selected", input$area.min, "as area.")})
-    output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility.")})
-    output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
-    output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
-    output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-    output$data <- renderTable({file1 = input$skyline.file
-      if (is.null(file1)) {
-        return(NULL)
+  output$machine <- renderText({paste("Your machine type is", input$machine.type, ".")})
+  output$minimum <- renderText({paste("You have selected", input$area.min, "as area.")})
+  output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility.")})
+  output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
+  output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
+  output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
+  output$data <- renderTable({file1 = input$skyline.file
+    if (is.null(file1)) {
+      return(NULL)
+      }
+    tryCatch({
+      df <- read.csv(file1$datapath)},
+      error = function(e) {
+      stop(safeError(e))
+      }
+    )
+    
+    if (input$disp == "head") {
+      return(head(df))
     }
-    read.csv(file1$datapath)
-    })
-  }
+    else {
+      return(df)
+    }
+  })
+}
 
 
 shinyApp(ui, server)
