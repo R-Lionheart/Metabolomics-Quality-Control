@@ -1,14 +1,17 @@
 library(shiny)
+library(shinyjs)
 library(shinythemes)
 
-ui <- fluidPage(
+ui <- fluidPage(useShinyjs(),
   theme = shinytheme("sandstone"),
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
-  
+
+  # -----------------------------------------------------------------
   titlePanel("Quality Control for the Ingalls Laboratory"),
   
+  # -----------------------------------------------------------------
   sidebarLayout(
     sidebarPanel(
       wellPanel(id = "tPanel", style = "overflow-y:scroll; max-height: 500",
@@ -50,7 +53,8 @@ ui <- fluidPage(
       sliderInput("ppm.flex", h5("Parts per Million"),
                   min = 1, step = 1, max = 10, value = 5)
       )),
-    
+  
+  # -----------------------------------------------------------------  
   mainPanel(
     tabsetPanel(type = "tabs",
       tabPanel("Information",
@@ -76,7 +80,8 @@ ui <- fluidPage(
         p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank", style = "font-family: 'times'; font-sil6pt"),
         p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
         p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
-                  
+    
+    # -----------------------------------------------------------------              
     tabPanel("Targeted",
       absolutePanel(top = 50, left = 0,  width = 400,
         draggable = TRUE,
@@ -92,17 +97,24 @@ ui <- fluidPage(
         tags$head(tags$style())
         )
       ),
-      helpText("Testing, testing"),
-      actionButton("transform", "Transform skyline output."),
+      helpText("Click the button below to view the variable classes of your skyline file and transform them to numeric or character classes."),
+      actionButton("transform", "Transform skyline output."), hidden(div(id='text_div',verbatimTextOutput("text"))),
+      textOutput("variables"),
       tableOutput("data1"),
       tableOutput("data2")
     ),
+    
+    # -----------------------------------------------------------------
     tabPanel("Untargeted"))
     )
   )
 )
 
-  
+# before <- lapply(skyline.output, class)
+# cat("Original class variables ", "\n")
+# print(paste(colnames(skyline.output), ":", before))
+
+# -----------------------------------------------------------------
 server = function(input, output, session) {
   output$machine <- renderText({paste("Your machine type is", input$machine.type, ".")})
   output$tags <- renderText({paste("Your tags for sample matching are: ", input$std.tags, ".")})
@@ -111,7 +123,6 @@ server = function(input, output, session) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-  observeEvent(input$transform, {insertUI("#transform", "afterEnd", actionButton("dynamic", "Undo transformation."))})
   output$data1 <- renderTable({file1 = input$skyline.file
     if (is.null(file1)) {
       return(NULL)
@@ -129,6 +140,11 @@ server = function(input, output, session) {
       return(df)
     }
   }, bordered = TRUE, caption = "Original Skyline output file")
+  observeEvent(input$transform, {
+    toggle('text_div')
+    output$text <- renderText({"ahh you pressed it"})
+  })
+  
   output$data2 <- renderTable({file2 = input$supporting.file
     if (is.null(file2)) {
       return(NULL)
@@ -137,5 +153,6 @@ server = function(input, output, session) {
   }, bordered = TRUE, caption = "Original supporting file")
 }
 
+# -----------------------------------------------------------------
 shinyApp(ui, server)
 
