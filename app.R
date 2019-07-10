@@ -2,7 +2,7 @@ library(shiny)
 library(shinythemes)
 
 ui <- fluidPage(
-  #theme = shinytheme("darkly"),
+  theme = shinytheme("sandstone"),
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
@@ -26,6 +26,9 @@ ui <- fluidPage(
                    selected = "head"),
       fileInput("skyline.file", multiple = TRUE, accept = c("text/csv", "text/comma-separated-values,text/plain",".csv"), h5("Skyline file input")),
       fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
+      hr(),
+      textInput("std.tags", h5("Standard tag input (QE only)"), 
+                value = "Enter samples..."),
       hr(),
       helpText("Pick the minimum height to be counted as a 'real' peak (QE suggestion: HILIC - 1000, Cyano - 5000)"),
       sliderInput("area.min", h5("Area Minimum"), 
@@ -80,6 +83,7 @@ ui <- fluidPage(
         wellPanel(em("This window can be dragged around for easier viewing."),
                   strong("Your Quality Control Parameters are:"),   
         textOutput("machine"),
+        textOutput("tags"),
         textOutput("minimum"),
         textOutput("retention"),
         textOutput("blank"),
@@ -88,6 +92,8 @@ ui <- fluidPage(
         tags$head(tags$style())
         )
       ),
+      helpText("Testing, testing"),
+      actionButton("transform", "Transform skyline output."),
       tableOutput("data1"),
       tableOutput("data2")
     ),
@@ -97,13 +103,15 @@ ui <- fluidPage(
 )
 
   
-server = function(input, output) {
+server = function(input, output, session) {
   output$machine <- renderText({paste("Your machine type is", input$machine.type, ".")})
+  output$tags <- renderText({paste("Your tags for sample matching are: ", input$std.tags, ".")})
   output$minimum <- renderText({paste("You have selected", input$area.min, "as area.")})
   output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility.")})
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
+  observeEvent(input$transform, {insertUI("#transform", "afterEnd", actionButton("dynamic", "Undo transformation."))})
   output$data1 <- renderTable({file1 = input$skyline.file
     if (is.null(file1)) {
       return(NULL)
@@ -120,13 +128,13 @@ server = function(input, output) {
     else {
       return(df)
     }
-  }, bordered = TRUE, caption = "Skyline Output File")
+  }, bordered = TRUE, caption = "Original Skyline output file")
   output$data2 <- renderTable({file2 = input$supporting.file
     if (is.null(file2)) {
       return(NULL)
     }
     read.csv(file2$datapath)
-  })
+  }, bordered = TRUE, caption = "Original supporting file")
 }
 
 shinyApp(ui, server)
