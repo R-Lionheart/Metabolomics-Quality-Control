@@ -2,16 +2,18 @@ library(shiny)
 library(shinyjs)
 library(shinythemes)
 
+source("linked_transform.R")
+
 ui <- fluidPage(useShinyjs(),
   theme = shinytheme("sandstone"),
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
 
-  # -----------------------------------------------------------------
+  # Title Panel-----------------------------------------------------------------
   titlePanel("Quality Control for the Ingalls Laboratory"),
   
-  # -----------------------------------------------------------------
+  # Sidebar Panel-----------------------------------------------------------------
   sidebarLayout(
     sidebarPanel(
       wellPanel(id = "tPanel", style = "overflow-y:scroll; max-height: 500",
@@ -54,7 +56,7 @@ ui <- fluidPage(useShinyjs(),
                   min = 1, step = 1, max = 10, value = 5)
       )),
   
-  # -----------------------------------------------------------------  
+  # Main Panel: Information-----------------------------------------------------------------  
   mainPanel(
     tabsetPanel(type = "tabs",
       tabPanel("Information",
@@ -81,7 +83,7 @@ ui <- fluidPage(useShinyjs(),
         p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
         p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
     
-    # -----------------------------------------------------------------              
+    # Main Panel: Targeted-----------------------------------------------------------------              
     tabPanel("Targeted",
       absolutePanel(top = 50, left = 0,  width = 400,
         draggable = TRUE,
@@ -98,23 +100,23 @@ ui <- fluidPage(useShinyjs(),
         )
       ),
       helpText("Click the button below to view the variable classes of your skyline file and transform them to numeric or character classes."),
-      actionButton("transform", "Transform skyline output."), hidden(div(id='text_div',verbatimTextOutput("text"))),
+      actionButton("transform", "Transform skyline output"), 
+        hidden(div(id = "text_div", textOutput("text"))),
       textOutput("variables"),
       tableOutput("data1"),
-      tableOutput("data2")
+      tableOutput("data2"),
+      transformVariablesUI("transforms")
+      
     ),
     
-    # -----------------------------------------------------------------
+    # Main Panel: Untargeted-----------------------------------------------------------------
     tabPanel("Untargeted"))
     )
   )
 )
 
-# before <- lapply(skyline.output, class)
-# cat("Original class variables ", "\n")
-# print(paste(colnames(skyline.output), ":", before))
 
-# -----------------------------------------------------------------
+# Server-----------------------------------------------------------------
 server = function(input, output, session) {
   output$machine <- renderText({paste("Your machine type is", input$machine.type, ".")})
   output$tags <- renderText({paste("Your tags for sample matching are: ", input$std.tags, ".")})
@@ -151,8 +153,10 @@ server = function(input, output, session) {
     }
     read.csv(file2$datapath)
   }, bordered = TRUE, caption = "Original supporting file")
+  df2 <- callModule(TransformVariables, "transforms", reactive(data1)
+  )
 }
 
-# -----------------------------------------------------------------
+# Shiny Implementation-----------------------------------------------------------------
 shinyApp(ui, server)
 
