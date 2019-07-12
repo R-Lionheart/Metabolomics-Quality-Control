@@ -2,7 +2,6 @@ library(shiny)
 library(shinyjs)
 library(shinythemes)
 
-source("linked_transform.R")
 
 ui <- fluidPage(useShinyjs(),
   theme = shinytheme("sandstone"),
@@ -102,11 +101,8 @@ ui <- fluidPage(useShinyjs(),
       helpText("Click the button below to view the variable classes of your skyline file and transform them to numeric or character classes."),
       actionButton("transform", "Transform skyline output"), 
         hidden(div(id = "text_div", textOutput("text"))),
-      textOutput("variables"),
       tableOutput("data1"),
-      tableOutput("data2"),
-      transformVariablesUI("transforms")
-      
+      tableOutput("data2")
     ),
     
     # Main Panel: Untargeted-----------------------------------------------------------------
@@ -153,8 +149,6 @@ server = function(input, output, session) {
     }
     read.csv(file2$datapath)
   }, bordered = TRUE, caption = "Original supporting file")
-  df2 <- callModule(TransformVariables, "transforms", reactive(data1)
-  )
 }
 
 # Shiny Implementation-----------------------------------------------------------------
