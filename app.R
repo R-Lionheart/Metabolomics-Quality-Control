@@ -1,6 +1,7 @@
 library(shiny)
 library(shinyjs)
 library(shinythemes)
+library(tidyverse)
 
 
 ui <- fluidPage(useShinyjs(),
@@ -82,33 +83,35 @@ ui <- fluidPage(useShinyjs(),
         p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
         p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
     
-    # Main Panel: Targeted-----------------------------------------------------------------              
-    tabPanel("Targeted",
-      absolutePanel(top = 50, left = 0,  width = 400,
-        draggable = TRUE,
-        wellPanel(em("This window can be dragged around for easier viewing."),
-                  strong("Your Quality Control Parameters are:"),   
-        textOutput("machine"),
-        textOutput("tags"),
-        textOutput("minimum"),
-        textOutput("retention"),
-        textOutput("blank"),
-        textOutput("signal"),
-        textOutput("ppm"),
-        tags$head(tags$style())
-        )
+      # Main Panel: Targeted-----------------------------------------------------------------              
+      tabPanel("Targeted",
+        absolutePanel(top = 50, left = 0,  width = 400,
+          draggable = TRUE,
+          wellPanel(em("This window can be dragged around for easier viewing."),
+                    strong("Your Quality Control Parameters are:"),   
+          textOutput("machine"),
+          textOutput("tags"),
+          textOutput("minimum"),
+          textOutput("retention"),
+          textOutput("blank"),
+          textOutput("signal"),
+          textOutput("ppm"),
+          tags$head(tags$style())
+          )
+        ),
+        helpText("Click the button below to view the variable classes of your skyline file and transform them to numeric or character classes."),
+        actionButton("transform", "Transform skyline output"), 
+          hidden(div(id = "text_div", textOutput("text"))),
+        tableOutput("data1"),
+        tableOutput("data2")
       ),
-      helpText("Click the button below to view the variable classes of your skyline file and transform them to numeric or character classes."),
-      actionButton("transform", "Transform skyline output"), 
-        hidden(div(id = "text_div", textOutput("text"))),
-      tableOutput("data1"),
-      tableOutput("data2")
-    ),
     
-    # Main Panel: Untargeted-----------------------------------------------------------------
-    tabPanel("Untargeted"))
+      # Main Panel: Untargeted-----------------------------------------------------------------
+      tabPanel("Untargeted",
+        textOutput("update"))
+      )
     )
-  )
+  ) 
 )
 
 
@@ -121,6 +124,7 @@ server = function(input, output, session) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
+  output$update <- renderText("Stay tuned for targeted metabolomics workflow options.")
   output$data1 <- renderTable({file1 = input$skyline.file
     if (is.null(file1)) {
       return(NULL)
@@ -142,7 +146,6 @@ server = function(input, output, session) {
     toggle('text_div')
     output$text <- renderText({"ahh you pressed it"})
   })
-  
   output$data2 <- renderTable({file2 = input$supporting.file
     if (is.null(file2)) {
       return(NULL)
