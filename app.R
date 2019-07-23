@@ -118,10 +118,9 @@ server = function(input, output, session) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-  datafile1 <- callModule(csvFile, "skyline.file",
-                         stringsAsFactors = FALSE)
-  datafile2 <- callModule(csvFile, "supporting.file",
-                          stringsAsFactors = FALSE)
+  
+  datafile1 <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
+  datafile2 <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   
   output$data1 <- renderDataTable({
     datafile1()

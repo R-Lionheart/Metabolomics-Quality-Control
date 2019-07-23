@@ -1,27 +1,26 @@
 # Module UI function
-csvFileInput <- function(id, label = "CSV file") {
+variableTransformUI <- function(id, label = "transform.button") {
   # Create a namespace function using the provided id
   ns <- NS(id)
   
   tagList(
-    fileInput(ns("file"), label),
-    checkboxInput(ns("heading"), "Has header"),
-  )
+    actionButton(ns("transform"), label),
+    checkboxInput(ns("list.variables"), "List variables")
+    )
 }
 
+
+
 # Module server function
-csvFile <- function(input, output, session, stringsAsFactors) {
+variableTransform <- function(input, output, session) {
   # The selected file, if any
-  userFile <- reactive({
-    # If no file is selected, don't do anything
-    validate(need(input$file, message = FALSE))
-    input$file
-  })
+  userFile <- data1
   
   # The user's data, parsed into a data frame
   dataframe <- reactive({
     read.csv(userFile()$datapath,
              header = input$heading,
+             quote = input$quote,
              stringsAsFactors = stringsAsFactors)
   })
   
