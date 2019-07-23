@@ -99,7 +99,7 @@ ui <- fluidPage(useShinyjs(),
       ),
       absolutePanel(style = "border: 2px dashed black;",
         dataTableOutput("data1"),
-        dataTableOutput("data2"),
+        dataTableOutput("data2")
       )
     ),
 
