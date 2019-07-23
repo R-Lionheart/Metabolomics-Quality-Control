@@ -27,7 +27,7 @@ ui <- fluidPage(useShinyjs(),
       helpText("If you are analyzing files produced by the QE, upload a blank matcher csv here.
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
-      fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
+      csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
       textInput("std.tags", h5("Standard tag input (QE only)"), 
                 value = "Enter samples..."),
@@ -82,9 +82,9 @@ ui <- fluidPage(useShinyjs(),
     
     # -----------------------------------------------------------------              
     tabPanel("Targeted",
-      absolutePanel(top = 50, left = 0,  width = 400,
+      fixedPanel(top = 100, left = 100,  width = 400,
         draggable = TRUE,
-        absolutePanel(em("can it tho"),
+        wellPanel(style = "border: 2px dashed black;", em("This window can be dragged around for easier viewing."),
                   strong("Your Quality Control Parameters are:"),   
         textOutput("machine"),
         textOutput("tags"),
@@ -96,9 +96,11 @@ ui <- fluidPage(useShinyjs(),
         tags$head(tags$style())
         )
       ),
-      textOutput("variables"),
-      dataTableOutput("data1"),
-      tableOutput("data2")
+      absolutePanel(style = "border: 2px dashed black;",
+        textOutput("variables"),
+        dataTableOutput("data1"),
+        dataTableOutput("data2")
+      )
     ),
     
     # -----------------------------------------------------------------
@@ -106,10 +108,6 @@ ui <- fluidPage(useShinyjs(),
     )
   )
 )
-
-# before <- lapply(skyline.output, class)
-# cat("Original class variables ", "\n")
-# print(paste(colnames(skyline.output), ":", before))
 
 # -----------------------------------------------------------------
 server = function(input, output, session) {
@@ -120,11 +118,16 @@ server = function(input, output, session) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-  datafile <- callModule(csvFile, "skyline.file",
+  datafile1 <- callModule(csvFile, "skyline.file",
                          stringsAsFactors = FALSE)
+  datafile2 <- callModule(csvFile, "supporting.file",
+                          stringsAsFactors = FALSE)
   
   output$data1 <- renderDataTable({
-    datafile()
+    datafile1()
+  })
+  output$data2 <- renderDataTable({
+    datafile2()
   })
 }
 
