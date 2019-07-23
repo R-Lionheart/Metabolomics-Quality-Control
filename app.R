@@ -24,7 +24,7 @@ ui <- fluidPage(useShinyjs(),
       helpText("If you are analyzing files produced by the QE, upload a blank matcher csv here.
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
-      csvFileInput("skyline.file", h5("testing")),
+      csvFileInput("skyline.file", h5("Output file from Skyline.")),
       
       csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
@@ -52,60 +52,56 @@ ui <- fluidPage(useShinyjs(),
                   min = 1, step = 1, max = 10, value = 5)
       )
     ),
-    mainPanel(helpText("wtf"))
-  ),
-  
-  # -----------------------------------------------------------------  
-  mainPanel(
-    tabsetPanel(type = "tabs",
-      tabPanel("Information",
-                           
-        h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"),
-        div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
-          style = "font-family: 'times'; font-sil6pt"),
-        p("The application is split into two sections: targeted and untargeted metabolomic analysis, which can be accessed via the tabs at the top of the page (eventually).
-           Within each section, choose between code for Thermo Q Exactive HF (Orbitrap) and a Waters Xevo TQ-S (triple quadrupole) mass spectrometers. The code will clean up your peaks.
-           In fact, beneath this paragraph is a lovely visualization of that process.", style = "font-family: 'times'; font-sil6pt"),
-        img(src = "QC.png", height = 200, width = 200),
-        br(),
-        br(),
-        h4("LCMS Setup"),
-        div(p(HTML(paste0("Samples should be run in the following manner for the quality control code and ", a(href = "https://github.com/IngallsLabUW/B-MIS-normalization", "B-MIS Normalization"), "- a process used for matching internal standards."))),
-          style = "font-family: 'times'; font-sil6pt"),
-        br(),
-        p("Please label all samples in the following manner:", style = "font-family: 'times'; font-sil6pt", span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."), 
-                                                                    ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk)."), 
-                                                                    style = "font-family: 'times'; font-sil6pt"),
-        p("- Standards run (all mixed) at least once at the beginning and end of the run", style = "font-family: 'times'; font-sil6pt"),
-        p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix", style = "font-family: 'times'; font-sil6pt"),
-        p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank", style = "font-family: 'times'; font-sil6pt"),
-        p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
-        p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
     
-    tabPanel("Targeted",
-      fixedPanel(top = 100, left = 100,  width = 400,
-        draggable = TRUE,
-        wellPanel(style = "border: 2px dashed black;", em("This window can be dragged around for easier viewing."),
-                  strong("Your Quality Control Parameters are:"),   
-        textOutput("machine"),
-        textOutput("tags"),
-        textOutput("minimum"),
-        textOutput("retention"),
-        textOutput("blank"),
-        textOutput("signal"),
-        textOutput("ppm"),
-        tags$head(tags$style())
-        )
-      ),
-      absolutePanel(style = "border: 2px dashed black;",
-        dataTableOutput("data1"),
-        dataTableOutput("data2")
+    mainPanel(
+      tabsetPanel(type = "tabs",
+        tabPanel("Information", h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"), 
+          div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', 
+          a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
+          style = "font-family: 'times'; font-sil6pt"),
+          p("The application is split into two sections: targeted and untargeted metabolomic analysis, which can be accessed via the tabs at the top of the page (eventually). 
+             Within each section, choose between code for Thermo Q Exactive HF (Orbitrap) and a Waters Xevo TQ-S (triple quadrupole) mass spectrometers. The code will clean up your peaks.
+             In fact, beneath this paragraph is a lovely visualization of that process.", style = "font-family: 'times'; font-sil6pt"),
+          img(src = "QC.png", height = 200, width = 200),
+          br(),
+          h4("LCMS Setup"),
+          div(p(HTML(paste0("Samples should be run in the following manner for the quality control code and ", 
+            a(href = "https://github.com/IngallsLabUW/B-MIS-normalization", "B-MIS Normalization"), "- a process used for matching internal standards."))),
+            style = "font-family: 'times'; font-sil6pt"),
+          br(),
+          p("Please label all samples in the following manner:", style = "font-family: 'times'; font-sil6pt", span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."), 
+            ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk)."), style = "font-family: 'times'; font-sil6pt"),
+          p("- Standards run (all mixed) at least once at the beginning and end of the run", style = "font-family: 'times'; font-sil6pt"),
+          p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix", style = "font-family: 'times'; font-sil6pt"),
+          p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank", style = "font-family: 'times'; font-sil6pt"),
+          p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
+          p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
+        
+        tabPanel("Targeted", 
+          fixedPanel(top = 100, left = 100,  width = 400, draggable = TRUE,
+            wellPanel(style = "border: 2px dashed black;", em("This window can be dragged around for easier viewing."),
+              strong("Your Quality Control Parameters are:"),   
+              textOutput("machine"),
+              textOutput("tags"),
+              textOutput("minimum"),
+              textOutput("retention"),
+              textOutput("blank"),
+              textOutput("signal"),
+              textOutput("ppm"),
+              tags$head(tags$style())
+            )
+          ),
+          absolutePanel(style = "border: 2px dashed black;",
+            dataTableOutput("data1"),
+            dataTableOutput("data2")
+          )
+        ),
+        
+        tabPanel("Untargeted")
       )
-    ),
-
-    tabPanel("Untargeted")
     )
-  )
+  ),
+  mainPanel()
 )
 
 # -----------------------------------------------------------------
