@@ -20,14 +20,13 @@ ui <- fluidPage(useShinyjs(),
       radioButtons("machine.type", h5("Which machine is the output file from?"),
                    choices = list("Xevo TQS" = "TQS", "QExactive (QE)" = "QE"), selected = "TQS"),
       hr(),
+
+    
+      csvFileInput("skyline.file", "Skyline output (.csv format)"),
+      br(),
       helpText("If you are analyzing files produced by the QE, upload a blank matcher csv here.
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
-      radioButtons("disp", "Display",
-                   choices = c(Head = "head",
-                               All = "all"),
-                   selected = "head"),
-      fileInput("skyline.file", multiple = TRUE, accept = c("text/csv", "text/comma-separated-values,text/plain",".csv"), h5("Skyline file input")),
       fileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
       textInput("std.tags", h5("Standard tag input (QE only)"), 
@@ -85,7 +84,7 @@ ui <- fluidPage(useShinyjs(),
     tabPanel("Targeted",
       absolutePanel(top = 50, left = 0,  width = 400,
         draggable = TRUE,
-        wellPanel(em("This window can be dragged around for easier viewing."),
+        absolutePanel(em("can it tho"),
                   strong("Your Quality Control Parameters are:"),   
         textOutput("machine"),
         textOutput("tags"),
@@ -97,10 +96,8 @@ ui <- fluidPage(useShinyjs(),
         tags$head(tags$style())
         )
       ),
-      helpText("Click the button below to view the variable classes of your skyline file and transform them to numeric or character classes."),
-      actionButton("transform", "Transform skyline output."), hidden(div(id='text_div',verbatimTextOutput("text"))),
       textOutput("variables"),
-      tableOutput("data1"),
+      dataTableOutput("data1"),
       tableOutput("data2")
     ),
     
@@ -123,35 +120,15 @@ server = function(input, output, session) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-  output$data1 <- renderTable({file1 = input$skyline.file
-    if (is.null(file1)) {
-      return(NULL)
-      }
-    tryCatch({
-      df <- read.csv(file1$datapath)},
-      error = function(e) {
-      stop(safeError(e))
-      }
-    )
-    if (input$disp == "head") {
-      return(head(df))
-    }
-    else {
-      return(df)
-    }
-  }, bordered = TRUE, caption = "Original Skyline output file")
-  observeEvent(input$transform, {
-    toggle('text_div')
-    output$text <- renderText({"ahh you pressed it"})
-  })
+  datafile <- callModule(csvFile, "skyline.file",
+                         stringsAsFactors = FALSE)
   
-  output$data2 <- renderTable({file2 = input$supporting.file
-    if (is.null(file2)) {
-      return(NULL)
-    }
-    read.csv(file2$datapath)
-  }, bordered = TRUE, caption = "Original supporting file")
+  output$data1 <- renderDataTable({
+    datafile()
+  })
 }
+
+
 
 # -----------------------------------------------------------------
 shinyApp(ui, server)
