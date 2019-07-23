@@ -2,6 +2,7 @@ library(shiny)
 library(shinyjs)
 library(shinythemes)
 
+
 ui <- fluidPage(useShinyjs(),
   theme = shinytheme("sandstone"),
   tags$head(
@@ -20,13 +21,11 @@ ui <- fluidPage(useShinyjs(),
       radioButtons("machine.type", h5("Which machine is the output file from?"),
                    choices = list("Xevo TQS" = "TQS", "QExactive (QE)" = "QE"), selected = "TQS"),
       hr(),
-
-    
-      csvFileInput("skyline.file", "Skyline output (.csv format)"),
-      br(),
       helpText("If you are analyzing files produced by the QE, upload a blank matcher csv here.
                If you are analying files produced by the TQS, upload a master list of compounds here. 
                See Information tab for more details on files."),
+      csvFileInput("skyline.file", h5("testing")),
+      
       csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
       hr(),
       textInput("std.tags", h5("Standard tag input (QE only)"), 
@@ -51,7 +50,10 @@ ui <- fluidPage(useShinyjs(),
       helpText("Pick an absolute value for a cutoff for parts per million (ppm) (QE suggestion: 7)"),
       sliderInput("ppm.flex", h5("Parts per Million"),
                   min = 1, step = 1, max = 10, value = 5)
-      )),
+      )
+    ),
+    mainPanel(helpText("wtf"))
+  ),
   
   # -----------------------------------------------------------------  
   mainPanel(
@@ -80,7 +82,6 @@ ui <- fluidPage(useShinyjs(),
         p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
         p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
     
-    # -----------------------------------------------------------------              
     tabPanel("Targeted",
       fixedPanel(top = 100, left = 100,  width = 400,
         draggable = TRUE,
@@ -97,14 +98,12 @@ ui <- fluidPage(useShinyjs(),
         )
       ),
       absolutePanel(style = "border: 2px dashed black;",
-        textOutput("variables"),
         dataTableOutput("data1"),
-        dataTableOutput("data2")
+        dataTableOutput("data2"),
       )
     ),
-    
-    # -----------------------------------------------------------------
-    tabPanel("Untargeted"))
+
+    tabPanel("Untargeted")
     )
   )
 )
@@ -118,7 +117,7 @@ server = function(input, output, session) {
   output$blank <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
   output$signal <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
   output$ppm <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
-  
+
   datafile1 <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
   datafile2 <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   
@@ -128,9 +127,8 @@ server = function(input, output, session) {
   output$data2 <- renderDataTable({
     datafile2()
   })
+  
 }
-
-
 
 # -----------------------------------------------------------------
 shinyApp(ui, server)

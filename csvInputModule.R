@@ -5,7 +5,7 @@ csvFileInput <- function(id, label = "CSV file") {
   
   tagList(
     fileInput(ns("file"), label),
-    checkboxInput(ns("heading"), "Has header"),
+    checkboxInput(ns("heading"), "Has header")
   )
 }
 
