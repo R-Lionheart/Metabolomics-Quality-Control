@@ -77,9 +77,9 @@ ui <- fluidPage(useShinyjs(),
           p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
                                 
     tabPanel("Targeted",
-      div(class = "row-fluid",
-          div(class = "span6", actionButton("transform", "Transform the file")),  
-          div(class = "span6", absolutePanel(wellPanel(style = "border: 2px black;", strong("Your Quality Control Parameters are:"),
+      fluidRow(
+        column(3, actionButton("transform", "Transform the file")),  
+        column(9, wellPanel(strong("Your Quality Control Parameters are:"),
             textOutput("machine"),
             textOutput("tags"),
             textOutput("minimum"),
@@ -87,14 +87,16 @@ ui <- fluidPage(useShinyjs(),
             textOutput("blank"),
             textOutput("signal"),
             textOutput("ppm"),
-            tags$head(tags$style()))
-          )),
-          div(class = "span6", absolutePanel(
-            dataTableOutput("data1"),
-            dataTableOutput("data2")
-          )
+            tags$head(tags$style())
+          ))
+      ),
+      hr(),
+      fluidRow(
+        absolutePanel(
+          dataTableOutput("data1"),
+          dataTableOutput("data2")
         )
-      )     
+      )
     ),
   
     tabPanel("Untargeted",
