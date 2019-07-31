@@ -3,7 +3,7 @@ library(shinyjs)
 library(shinythemes)
 library(tidyverse)
 
-
+# -----------------------------------------------------------------
 ui <- fluidPage(useShinyjs(),
   theme = shinytheme("sandstone"),
   tags$head(
@@ -77,25 +77,24 @@ ui <- fluidPage(useShinyjs(),
           p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
                                 
     tabPanel("Targeted",
-      actionButton("transform", "Transform the file"),
-           
-      fixedPanel(top = 100, left = 100,  width = 400, draggable = TRUE,
-        wellPanel(style = "border: 2px dashed black;", em("This window can be dragged around for easier viewing."), strong("Your Quality Control Parameters are:"),   
-          textOutput("machine"),
-          textOutput("tags"),
-          textOutput("minimum"),
-          textOutput("retention"),
-          textOutput("blank"),
-          textOutput("signal"),
-          textOutput("ppm"),
-          tags$head(tags$style())
+      div(class = "row-fluid",
+          div(class = "span6", actionButton("transform", "Transform the file")),  
+          div(class = "span6", absolutePanel(wellPanel(style = "border: 2px black;", strong("Your Quality Control Parameters are:"),
+            textOutput("machine"),
+            textOutput("tags"),
+            textOutput("minimum"),
+            textOutput("retention"),
+            textOutput("blank"),
+            textOutput("signal"),
+            textOutput("ppm"),
+            tags$head(tags$style()))
+          )),
+          div(class = "span6", absolutePanel(
+            dataTableOutput("data1"),
+            dataTableOutput("data2")
+          )
         )
-      ),
-    
-      absolutePanel(style = "border: 2px dashed black;",
-        dataTableOutput("data1"),
-        dataTableOutput("data2")
-      )
+      )     
     ),
   
     tabPanel("Untargeted",
@@ -126,7 +125,7 @@ server = function(input, output, session) {
   })
   
   observeEvent(input$transform, {
-    transformed_datafile1 <- reactive({datafile1() %>% select(-Protein.Name, Protein)})
+    transformed_datafile1 <- reactive({datafile1() %>% select(-Protein.Name, -Protein)})
     output$data1 <- renderDataTable({
       transformed_datafile1()
     })
