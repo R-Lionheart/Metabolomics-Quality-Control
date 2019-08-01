@@ -10,16 +10,14 @@ ui <- fluidPage(useShinyjs(),
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
                 
-  titlePanel("Quality Control for the Ingalls Laboratory"),
-                
+  titlePanel("Targeted Quality Control for the Ingalls Laboratory"),
+
+    # Sidebar -----------------------------------------------------------------
     sidebarLayout(
       sidebarPanel(
         wellPanel(id = "tPanel", style = "overflow-y:scroll; max-height: 500",
           helpText("More info here about file input and parameter selection."),
-        
-          radioButtons("machine.type", h5("Which machine is the output file from?"),
-                     choices = list("Xevo TQS" = "TQS", "QExactive (QE)" = "QE"), selected = "TQS"),
-          hr(),
+
           helpText("If you are analyzing files produced by the QE, upload a blank matcher csv here.
                     If you are analying files produced by the TQS, upload a master list of compounds here. 
                     See Information tab for more details on files."),
@@ -50,7 +48,8 @@ ui <- fluidPage(useShinyjs(),
                     min = 1, step = 1, max = 10, value = 5)
         )
       ),
-                  
+      
+    # Main Panel -----------------------------------------------------------------
     mainPanel(
       tabsetPanel(type = "tabs",
         tabPanel("Information", h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"), 
@@ -75,20 +74,24 @@ ui <- fluidPage(useShinyjs(),
           p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank", style = "font-family: 'times'; font-sil6pt"),
           p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1", style = "font-family: 'times'; font-sil6pt"),
           p("- Samples. Example label: Date_Smp_AdditionalID_Rep", style = "font-family: 'times'; font-sil6pt"))),
-                                
-    tabPanel("Targeted",
+    
+    # QE tabPanel -----------------------------------------------------------------
+    tabPanel("QExactive",
       fluidRow(
         column(3, actionButton("transform", "Transform the file")),  
-        column(9, wellPanel(strong("Your Quality Control Parameters are:"),
-            textOutput("machine"),
-            textOutput("tags"),
-            textOutput("minimum"),
-            textOutput("retention"),
-            textOutput("blank"),
-            textOutput("signal"),
-            textOutput("ppm"),
-            tags$head(tags$style())
-          ))
+        column(4, wellPanel(strong("Your Quality Control Parameters are:"),
+          textOutput("machine"),
+          textOutput("tags"),
+          textOutput("minimum"),
+          textOutput("retention"),
+          textOutput("blank"),
+          textOutput("signal"),
+          textOutput("ppm"),
+          tags$head(tags$style()))
+        ),
+        column(4, wellPanel(strong("Dataset Classes"),
+          textOutput("classes_status"),
+          textOutput("actual_classes")))
       ),
       hr(),
       fluidRow(
@@ -98,39 +101,53 @@ ui <- fluidPage(useShinyjs(),
         )
       )
     ),
-  
-    tabPanel("Untargeted",
+   
+    # TQS tabPanel -----------------------------------------------------------------
+    tabPanel("Triple-Quadropole",
       helpText("Stay tuned for future developments!"))
     )
   )
 ))
 
+
 # -----------------------------------------------------------------
 server = function(input, output, session) {
-  output$machine   <- renderText({paste("Your machine type is", input$machine.type, ".")})
-  output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags, ".")})
-  output$minimum   <- renderText({paste("You have selected", input$area.min, "as area.")})
-  output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility.")})
-  output$blank     <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum.")})
-  output$signal    <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility.")})
-  output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility.")})
+  output$machine   <- renderText({paste("Your machine type is", input$machine.type)})
+  output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
+  output$minimum   <- renderText({paste("You have selected", input$area.min, "as area")})
+  output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility")})
+  output$blank     <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum")})
+  output$signal    <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility")})
+  output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility")})
   
+  output$classes_status <- renderText({paste("Before transformation:")})
+  output$actual_classes <- renderText({paste(colnames(datafile1()), ":", lapply(datafile1(), class))})
+
   
   datafile1 <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
   output$data1 <- renderDataTable({
     datafile1()
   })
-  
+
   datafile2 <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   output$data2 <- renderDataTable({
     datafile2()
   })
+
   
   observeEvent(input$transform, {
-    transformed_datafile1 <- reactive({datafile1() %>% select(-Protein.Name, -Protein)})
+    transformed_datafile1 <- reactive({datafile1() %>% 
+        select(-Protein.Name, -Protein) %>%
+        mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
+        mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
+        mutate(Background     = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
+        rename(Mass.Feature   = Precursor.Ion.Name)
+    })
     output$data1 <- renderDataTable({
       transformed_datafile1()
     })
+    output$classes_status <- renderText({paste("After transformation:")})
+    output$actual_classes <- renderText({paste(colnames(transformed_datafile1()), ":", lapply(transformed_datafile1(), class))})
   })
   
 }
@@ -139,3 +156,7 @@ server = function(input, output, session) {
 # -----------------------------------------------------------------
 shinyApp(ui, server)
 
+#   mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
+#   mutate(Background     = suppressWarnings(as.numeric(as.character(Background)))) %>%
+#   mutate(Mass.Error.PPM = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
+#   rename(Mass.Feature   = Precursor.Ion.Name)
