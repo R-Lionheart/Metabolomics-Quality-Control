@@ -156,7 +156,4 @@ server = function(input, output, session) {
 # -----------------------------------------------------------------
 shinyApp(ui, server)
 
-#   mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
-#   mutate(Background     = suppressWarnings(as.numeric(as.character(Background)))) %>%
-#   mutate(Mass.Error.PPM = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
-#   rename(Mass.Feature   = Precursor.Ion.Name)
+
