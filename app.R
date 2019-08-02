@@ -9,12 +9,13 @@ ui <- fluidPage(useShinyjs(),
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
-                
+  
+  # Title Panel -----------------------------------------------------------------
   titlePanel("Targeted Quality Control for the Ingalls Laboratory"),
 
-    # Sidebar -----------------------------------------------------------------
+    # Sidebar Panel -----------------------------------------------------------------
     sidebarLayout(
-      sidebarPanel(
+      sidebarPanel(width = 2,
         wellPanel(id = "tPanel", style = "overflow-y:scroll; max-height: 500",
           helpText("More info here about file input and parameter selection."),
 
@@ -50,7 +51,7 @@ ui <- fluidPage(useShinyjs(),
       ),
       
     # Main Panel -----------------------------------------------------------------
-    mainPanel(
+    mainPanel(width = 10,
       tabsetPanel(type = "tabs",
         tabPanel("Information", h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"), 
           div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', 
@@ -78,8 +79,12 @@ ui <- fluidPage(useShinyjs(),
     # QE tabPanel -----------------------------------------------------------------
     tabPanel("QExactive",
       fluidRow(
-        column(3, actionButton("transform", "Transform the file")),  
-        column(4, wellPanel(strong("Your Quality Control Parameters are:"),
+        column(4, actionButton("transform", "Change variable classes"),
+               br(),
+               br(),
+               wellPanel(strong("Your run types are:"), textOutput("runtypes"))
+        ),
+        column(3, wellPanel(strong("Your Quality Control Parameters are:"),
           textOutput("machine"),
           textOutput("tags"),
           textOutput("minimum"),
@@ -91,17 +96,22 @@ ui <- fluidPage(useShinyjs(),
         ),
         column(4, wellPanel(strong("Dataset Classes"),
           textOutput("classes_status"),
-          textOutput("actual_classes")))
+          textOutput("classes")))
       ),
       hr(),
       fluidRow(
-        absolutePanel(
-          dataTableOutput("data1"),
-          dataTableOutput("data2")
-        )
+        column(9,
+          absolutePanel(
+            dataTableOutput("data1"),
+            dataTableOutput("data2")
+          )
+        ),
+        column(3,
+          actionButton("SN", "Signal to Noise flags")
+        )    
       )
     ),
-   
+
     # TQS tabPanel -----------------------------------------------------------------
     tabPanel("Triple-Quadropole",
       helpText("Stay tuned for future developments!"))
@@ -110,7 +120,13 @@ ui <- fluidPage(useShinyjs(),
 ))
 
 
-# -----------------------------------------------------------------
+
+#   filter(Replicate.Name %in% checked.blanks$Replicate.Name) %>%
+#   mutate(SN.Flag       = ifelse(((Area / Background) < SN.min), "SN.Flag", NA)) %>%
+#   mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > ppm.flex, "ppm.Flag", NA)) %>%
+#   mutate(area.min.Flag = ifelse((Area < area.min), "area.min.Flag", NA))
+
+# Server function -----------------------------------------------------------------
 server = function(input, output, session) {
   output$machine   <- renderText({paste("Your machine type is", input$machine.type)})
   output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
@@ -121,7 +137,10 @@ server = function(input, output, session) {
   output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility")})
   
   output$classes_status <- renderText({paste("Before transformation:")})
-  output$actual_classes <- renderText({paste(colnames(datafile1()), ":", lapply(datafile1(), class))})
+  output$classes <- renderText({paste(colnames(datafile1()), ":", lapply(datafile1(), class))})
+  
+  output$runtypes <- renderText({paste(unique(tolower(str_extract(datafile1()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
+  output$SN <- renderText({"Add those flags"})
 
   
   datafile1 <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
@@ -134,7 +153,7 @@ server = function(input, output, session) {
     datafile2()
   })
 
-  
+  # Transform event -----------------------------------------------------------------
   observeEvent(input$transform, {
     transformed_datafile1 <- reactive({datafile1() %>% 
         select(-Protein.Name, -Protein) %>%
@@ -147,8 +166,10 @@ server = function(input, output, session) {
       transformed_datafile1()
     })
     output$classes_status <- renderText({paste("After transformation:")})
-    output$actual_classes <- renderText({paste(colnames(transformed_datafile1()), ":", lapply(transformed_datafile1(), class))})
+    output$classes <- renderText({paste(colnames(transformed_datafile1()), ":", lapply(transformed_datafile1(), class))})
   })
+  
+  
   
 }
 
