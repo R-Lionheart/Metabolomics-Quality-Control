@@ -133,25 +133,25 @@ server = function(input, output, session) {
   output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility")})
   
   output$classes_status <- renderText({paste("Before transformation:")})
-  output$classes <- renderText({paste(colnames(datafile1()), ":", lapply(datafile1(), class))})
+  output$classes <- renderText({paste(colnames(skyline.file()), ":", lapply(skyline.file(), class))})
   
-  output$runtypes <- renderText({paste(unique(tolower(str_extract(datafile1()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
+  output$runtypes <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
   output$SN <- renderText({"Add those flags"})
 
   
-  datafile1 <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
+  skyline.file <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
   output$data1 <- renderDataTable({
-    datafile1()
+    skyline.file()
   })
 
-  datafile2 <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
+  supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   output$data2 <- renderDataTable({
-    datafile2()
+    supporting.file()
   })
 
   # Transform event -----------------------------------------------------------------
   observeEvent(input$transform, {
-    transformed_datafile1 <- reactive({datafile1() %>% 
+    skyline.transformed <- reactive({skyline.file() %>% 
       select(-Protein.Name, -Protein) %>%
       mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
       mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
@@ -159,15 +159,15 @@ server = function(input, output, session) {
       rename(Mass.Feature   = Precursor.Ion.Name)
     })
     output$data1 <- renderDataTable({
-      transformed_datafile1()
+      skyline.transformed()
     })
     output$classes_status <- renderText({paste("After transformation:")})
-    output$classes <- renderText({paste(colnames(transformed_datafile1()), ":", lapply(transformed_datafile1(), class))})
+    output$classes <- renderText({paste(colnames(skyline.transformed()), ":", lapply(skyline.transformed(), class))})
   })
   
   # First flags event -----------------------------------------------------------------
   observeEvent(input$SN, {
-    transformed_datafile2 <- reactive({datafile1() %>% 
+    skyline.flagged <- reactive({skyline.file() %>% 
       mutate(SN.Flag = ifelse(((as.numeric(Area) / as.numeric(Background)) < input$SN.min), "SN.Flag", NA))
     })
     
@@ -175,7 +175,7 @@ server = function(input, output, session) {
     #   mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > ppm.flex, "ppm.Flag", NA)) %>%
     #   mutate(area.min.Flag = ifelse((Area < area.min), "area.min.Flag", NA))
     output$data1 <- renderDataTable({
-      transformed_datafile2()
+      skyline.flagged()
     })
     
   })
