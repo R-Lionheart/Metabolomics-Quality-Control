@@ -107,7 +107,10 @@ ui <- fluidPage(useShinyjs(),
           )
         ),
         column(3,
-          actionButton("SN", "Signal to Noise flags")
+          actionButton("SN", "Signal to Noise flags"),
+          br(),
+          br(),
+          actionButton("RT", "Retention Time flags")
         )    
       )
     ),
@@ -168,19 +171,26 @@ server = function(input, output, session) {
   })
   
   # First flags event -----------------------------------------------------------------
+  skyline.first.flagged <- NULL
   observeEvent(input$SN, {
-    skyline.flagged <- reactive({skyline.transformed() %>% 
+    skyline.first.flagged <<- reactive({skyline.transformed() %>% 
       filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
       mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
       mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
       mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
     })
-
     output$data1 <- renderDataTable({
-      skyline.flagged()
+      skyline.first.flagged()
     })
-    
   })
+  
+  # RT flags event -----------------------------------------------------------------
+  
+  # retention.time.flags <- skyline.output %>%
+  #   filter(Replicate.Name %in% std.tags) %>%
+  #   select(Mass.Feature, Retention.Time) %>%
+  #   group_by(Mass.Feature) %>%
+  #   summarise(RT.Reference = mean((Retention.Time), na.rm = TRUE))
   
 }
 
