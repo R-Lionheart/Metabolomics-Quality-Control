@@ -150,8 +150,9 @@ server = function(input, output, session) {
   })
 
   # Transform event -----------------------------------------------------------------
+  skyline.transformed <- NULL
   observeEvent(input$transform, {
-    skyline.transformed <- reactive({skyline.file() %>% 
+    skyline.transformed <<- reactive({skyline.file() %>% 
       select(-Protein.Name, -Protein) %>%
       mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
       mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
@@ -167,11 +168,11 @@ server = function(input, output, session) {
   
   # First flags event -----------------------------------------------------------------
   observeEvent(input$SN, {
-    skyline.flagged <- reactive({skyline.file() %>% 
-      mutate(SN.Flag = ifelse(((as.numeric(Area) / as.numeric(Background)) < input$SN.min), "SN.Flag", NA))
+    skyline.flagged <- reactive({skyline.transformed() %>% 
+      filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
+      mutate(SN.Flag = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA))
     })
     
-    #   filter(Replicate.Name %in% checked.blanks$Replicate.Name) %>%
     #   mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > ppm.flex, "ppm.Flag", NA)) %>%
     #   mutate(area.min.Flag = ifelse((Area < area.min), "area.min.Flag", NA))
     output$data1 <- renderDataTable({
