@@ -121,10 +121,6 @@ ui <- fluidPage(useShinyjs(),
 
 
 
-#   filter(Replicate.Name %in% checked.blanks$Replicate.Name) %>%
-#   mutate(SN.Flag       = ifelse(((Area / Background) < SN.min), "SN.Flag", NA)) %>%
-#   mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > ppm.flex, "ppm.Flag", NA)) %>%
-#   mutate(area.min.Flag = ifelse((Area < area.min), "area.min.Flag", NA))
 
 # Server function -----------------------------------------------------------------
 server = function(input, output, session) {
@@ -156,11 +152,11 @@ server = function(input, output, session) {
   # Transform event -----------------------------------------------------------------
   observeEvent(input$transform, {
     transformed_datafile1 <- reactive({datafile1() %>% 
-        select(-Protein.Name, -Protein) %>%
-        mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
-        mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
-        mutate(Background     = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
-        rename(Mass.Feature   = Precursor.Ion.Name)
+      select(-Protein.Name, -Protein) %>%
+      mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
+      mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
+      mutate(Background     = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
+      rename(Mass.Feature   = Precursor.Ion.Name)
     })
     output$data1 <- renderDataTable({
       transformed_datafile1()
@@ -169,7 +165,20 @@ server = function(input, output, session) {
     output$classes <- renderText({paste(colnames(transformed_datafile1()), ":", lapply(transformed_datafile1(), class))})
   })
   
-  
+  # First flags event -----------------------------------------------------------------
+  observeEvent(input$SN, {
+    transformed_datafile2 <- reactive({datafile1() %>% 
+      mutate(SN.Flag = ifelse(((as.numeric(Area) / as.numeric(Background)) < input$SN.min), "SN.Flag", NA))
+    })
+    
+    #   filter(Replicate.Name %in% checked.blanks$Replicate.Name) %>%
+    #   mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > ppm.flex, "ppm.Flag", NA)) %>%
+    #   mutate(area.min.Flag = ifelse((Area < area.min), "area.min.Flag", NA))
+    output$data1 <- renderDataTable({
+      transformed_datafile2()
+    })
+    
+  })
   
 }
 
