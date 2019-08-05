@@ -156,7 +156,8 @@ server = function(input, output, session) {
       select(-Protein.Name, -Protein) %>%
       mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
       mutate(Area           = suppressWarnings(as.numeric(as.character(Area)))) %>%
-      mutate(Background     = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
+      mutate(Background     = suppressWarnings(as.numeric(as.character(Background)))) %>%
+      mutate(Mass.Error.PPM = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
       rename(Mass.Feature   = Precursor.Ion.Name)
     })
     output$data1 <- renderDataTable({
@@ -170,11 +171,11 @@ server = function(input, output, session) {
   observeEvent(input$SN, {
     skyline.flagged <- reactive({skyline.transformed() %>% 
       filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
-      mutate(SN.Flag = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA))
+      mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
+      mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
+      mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
     })
-    
-    #   mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > ppm.flex, "ppm.Flag", NA)) %>%
-    #   mutate(area.min.Flag = ifelse((Area < area.min), "area.min.Flag", NA))
+
     output$data1 <- renderDataTable({
       skyline.flagged()
     })
