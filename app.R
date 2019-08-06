@@ -84,7 +84,7 @@ ui <- fluidPage(useShinyjs(),
                br(),
                wellPanel(strong("Your run types are:"), textOutput("runtypes")),
                br(),
-               wellPanel(strong("Your Retention Time References are:"), dataTableOutput("Retention.Time.References"))
+               wellPanel(strong("Retention Time Reference Table"), dataTableOutput("Retention.Time.References"))
         ),
         column(3, wellPanel(strong("Your Quality Control Parameters are:"),
           textOutput("machine"),
@@ -94,11 +94,14 @@ ui <- fluidPage(useShinyjs(),
           textOutput("blank"),
           textOutput("signal"),
           textOutput("ppm"),
-          tags$head(tags$style()))
+          tags$head(tags$style())),
+          br()
         ),
         column(4, wellPanel(strong("Dataset Classes"),
           textOutput("classes_status"),
-          textOutput("classes")))
+          textOutput("classes")),
+          wellPanel(strong("Blanks Reference Table"), dataTableOutput("Blank.Ratio.References"))
+        )
       ),
       hr(),
       fluidRow(
@@ -178,7 +181,25 @@ server = function(input, output, session) {
                                             select(Mass.Feature, Retention.Time) %>%
                                             group_by(Mass.Feature) %>%
                                             summarise(RT.References = mean((Retention.Time), na.rm = TRUE)))
+    output$Blank.Ratio.References <- renderDataTable(skyline.file() %>%
+                                              #TODO (rlionheart): see if this repetitive code can be dropped, and the same transformation function can be applied to multiple files.
+                                            filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
+                                            select(-Protein.Name, -Protein) %>%
+                                            rename(Mass.Feature = Precursor.Ion.Name) %>%
+                                            rename(Blank.Name = Replicate.Name,
+                                                   Blank.Area = Area) %>%
+                                            select(Blank.Name, Mass.Feature, Blank.Area)) 
   })
+  
+  # filter(Replicate.Name %in% checked.blanks$Blank.Name) %>%
+  #   rename(Blank.Name = Replicate.Name,
+  #          Blank.Area = Area) %>%
+  #   select(Blank.Name, Mass.Feature, Blank.Area) %>%
+  #   left_join(checked.blanks, by = "Blank.Name") %>% 
+  #   select(-Blank.Name) %>%
+  #   arrange(desc(Blank.Area)) %>%
+  #   group_by(Mass.Feature, Replicate.Name) %>% 
+  #   filter(row_number() == 1)
   
   
   # First flags event -----------------------------------------------------------------
@@ -223,15 +244,7 @@ server = function(input, output, session) {
 
 }
 
-# filter(Replicate.Name %in% checked.blanks$Blank.Name) %>%
-#   rename(Blank.Name = Replicate.Name,
-#          Blank.Area = Area) %>%
-#   select(Blank.Name, Mass.Feature, Blank.Area) %>%
-#   left_join(checked.blanks, by = "Blank.Name") %>% 
-#   select(-Blank.Name) %>%
-#   arrange(desc(Blank.Area)) %>%
-#   group_by(Mass.Feature, Replicate.Name) %>% 
-#   filter(row_number() == 1)
+
 # 
 # left_join(blank.flags) %>%
 #   mutate(blank.Flag = ifelse((Area / Blank.Area) < blank.ratio.max, "blank.Flag", NA))
