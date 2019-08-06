@@ -84,7 +84,7 @@ ui <- fluidPage(useShinyjs(),
                br(),
                wellPanel(strong("Your run types are:"), textOutput("runtypes")),
                br(),
-               wellPanel(strong("Your Retention Time References are:"), dataTableOutput("RT.references"))
+               wellPanel(strong("Your Retention Time References are:"), dataTableOutput("Retention.Time.References"))
         ),
         column(3, wellPanel(strong("Your Quality Control Parameters are:"),
           textOutput("machine"),
@@ -102,13 +102,13 @@ ui <- fluidPage(useShinyjs(),
       ),
       hr(),
       fluidRow(
-        column(9,
+        column(10,
           absolutePanel(
             dataTableOutput("data1"),
             dataTableOutput("data2")
           )
         ),
-        column(3,
+        column(2,
           actionButton("SN", "Signal to Noise flags"),
           br(),
           br(),
@@ -144,7 +144,6 @@ server = function(input, output, session) {
   output$SN            <- renderText({"Add those flags"})
 
 
-  #170410_Smp_KM1513-15m_A
   skyline.file <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
   output$data1 <- renderDataTable({
     skyline.file()
@@ -155,7 +154,7 @@ server = function(input, output, session) {
     supporting.file()
   })
 
-  # Transform event -----------------------------------------------------------------
+  # First transform event -----------------------------------------------------------------
   skyline.transformed <- NULL
   observeEvent(input$transform, {
     skyline.transformed <<- reactive({skyline.file() %>% 
@@ -171,11 +170,11 @@ server = function(input, output, session) {
     })
     output$classes_status <- renderText({paste("After transformation:")})
     output$classes <- renderText({paste(colnames(skyline.transformed()), ":", lapply(skyline.transformed(), class))})
-    # TODO (rlionheart): include filter(Replicate.Name %in% std.tags)
-    output$RT.references <- renderDataTable(skyline.transformed() %>%
-                                              select(Mass.Feature, Retention.Time) %>%
-                                              group_by(Mass.Feature) %>%
-                                              summarise(RT.Refernece = mean((Retention.Time), na.rm = TRUE)))
+    # TODO (rlionheart): include filter(Replicate.Name %in% std.tags), check for correct RT table.
+    output$Retention.Time.References <- renderDataTable(skyline.transformed() %>%
+                                            select(Mass.Feature, Retention.Time) %>%
+                                            group_by(Mass.Feature) %>%
+                                            summarise(RT.References = mean((Retention.Time), na.rm = TRUE)))
   })
   
   
@@ -193,24 +192,19 @@ server = function(input, output, session) {
     })
   })
   
-  # # RT flags event -----------------------------------------------------------------
-  # observeEvent(input$RT, {
-  #   skyline.RT.flagged <- reactive({skyline.first.flagged() %>%
-  #     filter(Replicate.Name %in% input$std.tags) %>%
-  #     group_by(Mass.Feature) %>%
-  #     summarise(RT.Reference = mean((Retention.Time), na.rm = TRUE)) #%>%
-  #     #mutate(RT.Flag         = ifelse((abs(Retention.Time - RT.Reference) > input$RT.flex), "RT.Flag", NA))
-  #     
-  #   })
-  #   output$data1 <- renderDataTable({
-  #     skyline.RT.flagged()
-  #   })
-  # })
-  # # retention.time.flags <- skyline.output %>%
-  # #   filter(Replicate.Name %in% std.tags) %>%
-  # #   group_by(Mass.Feature) %>%
-  # #   summarise(RT.Reference = mean((Retention.Time), na.rm = TRUE))
-  # 
+  # RT flags event -----------------------------------------------------------------
+  observeEvent(input$RT, {
+    skyline.RT.flagged <- reactive({skyline.first.flagged() %>%
+      # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
+      group_by(Mass.Feature) %>%
+      mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
+      mutate(RT.Flag = ifelse((abs((Retention.Time) - RT.Reference) > input$RT.flex), "RT.Flag", NA))
+    })
+    output$data1 <- renderDataTable({
+      skyline.RT.flagged()
+    })
+  })
+
 }
 
 
