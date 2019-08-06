@@ -112,7 +112,10 @@ ui <- fluidPage(useShinyjs(),
           actionButton("SN", "Signal to Noise flags"),
           br(),
           br(),
-          actionButton("RT", "Retention Time flags")
+          actionButton("RT", "Retention Time flags"),
+          br(),
+          br(),
+          actionButton("Blk", "Blank flags")
         )    
       )
     ),
@@ -193,8 +196,9 @@ server = function(input, output, session) {
   })
   
   # RT flags event -----------------------------------------------------------------
+  skyline.RT.flagged <- NULL
   observeEvent(input$RT, {
-    skyline.RT.flagged <- reactive({skyline.first.flagged() %>%
+    skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
       # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
       group_by(Mass.Feature) %>%
       mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
@@ -204,10 +208,33 @@ server = function(input, output, session) {
       skyline.RT.flagged()
     })
   })
+  
+  # Blank flags event -----------------------------------------------------------------
+  observeEvent(input$Blk, {
+    skyline.blk.flagged <- reactive({skyline.RT.flagged() %>%
+        # TODO (rlionheart): Add filter(Replicate.Name %in% checked.blanks$Blank.Name), or alternative.
+        mutate(Blank.Area = 10) %>%
+        mutate(Blank.Flag = ifelse((Area / Blank.Area) < input$blank.ratio.max, "Blank.Flag", NA))
+      })
+    output$data1 <- renderDataTable({
+      skyline.blk.flagged()
+    })
+  })
 
 }
 
-
+# filter(Replicate.Name %in% checked.blanks$Blank.Name) %>%
+#   rename(Blank.Name = Replicate.Name,
+#          Blank.Area = Area) %>%
+#   select(Blank.Name, Mass.Feature, Blank.Area) %>%
+#   left_join(checked.blanks, by = "Blank.Name") %>% 
+#   select(-Blank.Name) %>%
+#   arrange(desc(Blank.Area)) %>%
+#   group_by(Mass.Feature, Replicate.Name) %>% 
+#   filter(row_number() == 1)
+# 
+# left_join(blank.flags) %>%
+#   mutate(blank.Flag = ifelse((Area / Blank.Area) < blank.ratio.max, "blank.Flag", NA))
 # -----------------------------------------------------------------
 shinyApp(ui, server)
 
