@@ -79,7 +79,8 @@ ui <- fluidPage(useShinyjs(),
     # QE tabPanel -----------------------------------------------------------------
     tabPanel("QExactive",
       fluidRow(
-        column(4, actionButton("transform", "Change variable classes"),
+        column(4, helpText("This is some helpful text"), 
+               actionButton("transform", "Change variable classes"),
                br(),
                br(),
                wellPanel(strong("Your run types are:"), textOutput("runtypes")),
@@ -118,7 +119,8 @@ ui <- fluidPage(useShinyjs(),
           actionButton("RT", "Retention Time flags"),
           br(),
           br(),
-          actionButton("Blk", "Blank flags")
+          actionButton("Blk", "Blank flags"),
+          actionButton("Blk2", "Blank Flags Part II")
         )    
       )
     ),
@@ -178,28 +180,12 @@ server = function(input, output, session) {
     output$classes <- renderText({paste(colnames(skyline.transformed()), ":", lapply(skyline.transformed(), class))})
     # TODO (rlionheart): include filter(Replicate.Name %in% std.tags), check for correct RT table.
     output$Retention.Time.References <- renderDataTable(skyline.transformed() %>%
-                                            select(Mass.Feature, Retention.Time) %>%
-                                            group_by(Mass.Feature) %>%
-                                            summarise(RT.References = mean((Retention.Time), na.rm = TRUE)))
-    output$Blank.Ratio.References <- renderDataTable(skyline.file() %>%
-                                              #TODO (rlionheart): see if this repetitive code can be dropped, and the same transformation function can be applied to multiple files.
-                                            filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
-                                            select(-Protein.Name, -Protein) %>%
-                                            rename(Mass.Feature = Precursor.Ion.Name) %>%
-                                            rename(Blank.Name = Replicate.Name,
-                                                   Blank.Area = Area) %>%
-                                            select(Blank.Name, Mass.Feature, Blank.Area)) 
+      select(Mass.Feature, Retention.Time) %>%
+      group_by(Mass.Feature) %>%
+      summarise(RT.References = mean((Retention.Time), na.rm = TRUE)))
   })
-  
-  # filter(Replicate.Name %in% checked.blanks$Blank.Name) %>%
-  #   rename(Blank.Name = Replicate.Name,
-  #          Blank.Area = Area) %>%
-  #   select(Blank.Name, Mass.Feature, Blank.Area) %>%
-  #   left_join(checked.blanks, by = "Blank.Name") %>% 
-  #   select(-Blank.Name) %>%
-  #   arrange(desc(Blank.Area)) %>%
-  #   group_by(Mass.Feature, Replicate.Name) %>% 
-  #   filter(row_number() == 1)
+
+ 
   
   
   # First flags event -----------------------------------------------------------------
@@ -231,23 +217,45 @@ server = function(input, output, session) {
   })
   
   # Blank flags event -----------------------------------------------------------------
+  Blank.Ratio.References <- NULL
   observeEvent(input$Blk, {
-    skyline.blk.flagged <- reactive({skyline.RT.flagged() %>%
-        # TODO (rlionheart): Add filter(Replicate.Name %in% checked.blanks$Blank.Name), or alternative.
-        mutate(Blank.Area = 10) %>%
-        mutate(Blank.Flag = ifelse((Area / Blank.Area) < input$blank.ratio.max, "Blank.Flag", NA))
-      })
+    Blank.Ratio.References <<- reactive({skyline.file() %>%
+      #TODO (rlionheart): see if this repetitive code can be dropped, and the same transformation function can be applied to multiple files.
+      #TODO (rlionheart): also double check this table itself- is it correct?
+      filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
+      select(-Protein.Name, -Protein) %>%
+      rename(Mass.Feature = Precursor.Ion.Name) %>%
+      rename(Blank.Name = Replicate.Name,
+             Blank.Area = Area) %>%
+      select(Blank.Name, Mass.Feature, Blank.Area) %>%
+      left_join(supporting.file(), by = "Blank.Name") %>%
+      arrange(desc(Blank.Area)) %>%
+      group_by(Mass.Feature, Replicate.Name) %>%
+      filter(row_number() == 1)
+    })
+    output$Blank.Ratio.References <- renderDataTable({
+      Blank.Ratio.References()
+    })
+  })
+  
+  skyline.blk.flagged <- NULL
+  observeEvent(input$Blk2, {
+    skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
+        # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
+        left_join(Blank.Ratio.References())
+      # mutate(Blank.Flag = ifelse((Area / Blank.Area) < input$blank.ratio.max, "Blank.Flag", NA))
+    })
     output$data1 <- renderDataTable({
       skyline.blk.flagged()
     })
   })
 
+
+
 }
 
 
-# 
-# left_join(blank.flags) %>%
-#   mutate(blank.Flag = ifelse((Area / Blank.Area) < blank.ratio.max, "blank.Flag", NA))
+
 # -----------------------------------------------------------------
 shinyApp(ui, server)
 
