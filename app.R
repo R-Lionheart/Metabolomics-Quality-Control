@@ -1,3 +1,4 @@
+library(plyr)
 library(shiny)
 library(shinyjs)
 library(shinythemes)
@@ -81,9 +82,10 @@ ui <- fluidPage(useShinyjs(),
       fluidRow(
         column(4, helpText("This is some helpful text"), 
                actionButton("transform", "Change variable classes"),
+               actionButton("Stds", "Re-add standards"),
                br(),
                br(),
-               wellPanel(strong("Your run types are:"), textOutput("runtypes")),
+               wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
                br(),
                wellPanel(strong("Retention Time Reference Table"), dataTableOutput("Retention.Time.References"))
         ),
@@ -148,8 +150,8 @@ server = function(input, output, session) {
   output$classes_status <- renderText({paste("Before transformation:")})
   output$classes <- renderText({paste(colnames(skyline.file()), ":", lapply(skyline.file(), class))})
   
-  output$runtypes      <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
-  output$SN            <- renderText({"Add those flags"})
+  output$runtypes   <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
+  output$SN         <- renderText({"Add those flags"})
 
 
   skyline.file <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
@@ -241,20 +243,45 @@ server = function(input, output, session) {
   skyline.blk.flagged <- NULL
   observeEvent(input$Blk2, {
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
-        # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
-        left_join(Blank.Ratio.References())
-      # mutate(Blank.Flag = ifelse((Area / Blank.Area) < input$blank.ratio.max, "Blank.Flag", NA))
+      # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
+      # TODO (rlionheart): also double check this table itself- is it correct?
+      left_join(Blank.Ratio.References()) %>%
+      mutate(Blank.Flag = ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA))
     })
     output$data1 <- renderDataTable({
       skyline.blk.flagged()
     })
   })
+  
+  # Re-adding stds event -----------------------------------------------------------------
+  final.skyline <- NULL
+  observeEvent(input$Stds, {
+    Stds.test <- grepl("_Std_", skyline.file()$Replicate.Name)
+    if (any(Stds.test == TRUE)) {
+      output$std.status <- renderText({"Standards in set. Joining them to the bottom of the dataset!"})
+      standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
+    } else {
+      output$std.status <- renderText({"Nothing to see here."})
+    }
 
-
-
+    final.skyline <<- reactive({rbind.fill((skyline.blk.flagged()), standards)
+    })
+  
+    output$data1 <- renderDataTable({
+      final.skyline()
+    })
+  })
 }
 
-
+# Stds.test <- grepl("_Std_", skyline.output$Replicate.Name)
+# 
+# if (any(Stds.test == TRUE)) {
+#   print("There are standards in this run. Joining standard samples to the bottom of the dataset!", quote = FALSE)
+#   standards <- skyline.classes.transformed[grep("Std", skyline.classes.transformed$Replicate.Name), ]
+#   last.join <- rbind.fill(last.join, standards)
+# } else {
+#   print("No standards exist in this set.")
+# }
 
 # -----------------------------------------------------------------
 shinyApp(ui, server)
