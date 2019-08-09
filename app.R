@@ -83,6 +83,7 @@ ui <- fluidPage(useShinyjs(),
         column(4, helpText("This is some helpful text"), 
                actionButton("transform", "Change variable classes"),
                actionButton("Stds", "Re-add standards"),
+               downloadButton("Download", "Download your QC file here"),
                br(),
                br(),
                wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
@@ -245,8 +246,8 @@ server = function(input, output, session) {
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
       # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
       # TODO (rlionheart): also double check this table itself- is it correct?
-      left_join(Blank.Ratio.References()) %>%
-      mutate(Blank.Flag = ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA))
+      left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
+      mutate(Blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA)))
     })
     output$data1 <- renderDataTable({
       skyline.blk.flagged()
@@ -260,30 +261,47 @@ server = function(input, output, session) {
     if (any(Stds.test == TRUE)) {
       output$std.status <- renderText({"Standards in set. Joining them to the bottom of the dataset!"})
       standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
+      final.skyline <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
     } else {
       output$std.status <- renderText({"Nothing to see here."})
+      final.skyline <<- reactive(skyline.blk.flagged())
     }
 
-    final.skyline <<- reactive({rbind.fill((skyline.blk.flagged()), standards)
-    })
   
     output$data1 <- renderDataTable({
       final.skyline()
     })
   })
+  
+  # Download -----------------------------------------------------------------
+
+  output$Download <- downloadHandler(
+    
+    output$Download <- downloadHandler(
+      filename = function() {
+        paste("data-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(final.skyline(), file)
+      }
+    )
+  )
+  
 }
 
-# Stds.test <- grepl("_Std_", skyline.output$Replicate.Name)
-# 
-# if (any(Stds.test == TRUE)) {
-#   print("There are standards in this run. Joining standard samples to the bottom of the dataset!", quote = FALSE)
-#   standards <- skyline.classes.transformed[grep("Std", skyline.classes.transformed$Replicate.Name), ]
-#   last.join <- rbind.fill(last.join, standards)
-# } else {
-#   print("No standards exist in this set.")
-# }
 
 # -----------------------------------------------------------------
 shinyApp(ui, server)
 
-
+# con <- file(paste("TQSQC_", basename(input_file), sep = ""), open = "wt")
+# writeLines(paste("Hello! Welcome to the world of TQS Quality Control! ",
+#                  "Minimum height for a real peak: ", min.height, ". ",
+#                  "Minimum area for a real peak: ", area.min, ". ",
+#                  "RT flexibility: ", RT.flex, ". ",
+#                  "Ion ratio (IR) flexibility: ", IR.flex, ". ",
+#                  "Blank can be this fraction of a sample: ", blk.thresh, ". ",
+#                  "S/N ratio: " , SN.min, ". ",
+#                  "Processed on: ", Sys.time(), ". ",
+#                  sep = ""), con)
+# write.csv(final.table, con, row.names = FALSE)
+# close(con)
