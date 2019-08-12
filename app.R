@@ -159,6 +159,7 @@ server = function(input, output, session) {
   output$data1 <- renderDataTable({
     skyline.file()
   })
+  
 
   supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   output$data2 <- renderDataTable({
@@ -279,7 +280,7 @@ server = function(input, output, session) {
     
     output$Download <- downloadHandler(
       filename = function() {
-        paste("data-", Sys.Date(), ".csv", sep="")
+        paste("TQSQC_", Sys.Date(), ".csv", sep = "")
       },
       content = function(file) {
         write.csv(final.skyline(), file)
