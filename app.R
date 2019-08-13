@@ -6,13 +6,14 @@ library(tidyverse)
 
 # -----------------------------------------------------------------
 ui <- fluidPage(useShinyjs(),
-  theme = shinytheme("sandstone"),
+  theme = shinytheme("yeti"),
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
   
   # Title Panel -----------------------------------------------------------------
-  titlePanel("Targeted Quality Control for the Ingalls Laboratory"),
+  h1(id = "big-heading", "Marine Microbial Metabolomics Lab: Quality Control"),
+  tags$style(HTML("#big-heading{color: #26337a;}")),
 
     # Sidebar Panel -----------------------------------------------------------------
     sidebarLayout(
@@ -25,6 +26,7 @@ ui <- fluidPage(useShinyjs(),
                     See Information tab for more details on files."),
           csvFileInput("skyline.file", h5("Output file from Skyline.")),
           csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
+          textOutput("myFileName"),
           hr(),
           textInput("std.tags", h5("Standard tag input (QE only)"), 
                   value = "Enter samples..."),
@@ -54,13 +56,15 @@ ui <- fluidPage(useShinyjs(),
     # Main Panel -----------------------------------------------------------------
     mainPanel(width = 10,
       tabsetPanel(type = "tabs",
-        tabPanel("Information", h3("How can YOU use the Ingalls Lab Quality Control?", align = "center"), 
+        tabPanel("Information", h2("Using the Ingalls Lab Quality Control", align = "center"), 
+          br(),
+          br(),
           div(p(HTML(paste0('This code, written in R, performs a user-defined quality-control check on output from the open-source mass spectrometer software ', 
-          a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
-          style = "font-family: 'times'; font-sil6pt"),
-          p("The application is split into two sections: targeted and untargeted metabolomic analysis, which can be accessed via the tabs at the top of the page (eventually). 
+            a(href = 'https://skyline.ms/project/home/software/Skyline/begin.view', "Skyline.")))),
+            style = "font-family: 'times'; font-sil6pt"),
+          p("This application contains three tabs: an Information tab, a QExactive tab, and a TQS (Triple Quadrupole Mass Spectrometer) tab.
              Within each section, choose between code for Thermo Q Exactive HF (Orbitrap) and a Waters Xevo TQ-S (triple quadrupole) mass spectrometers. The code will clean up your peaks.
-             In fact, beneath this paragraph is a lovely visualization of that process.", style = "font-family: 'times'; font-sil6pt"),
+             In fact, beneath this paragraph is a lovely visualization of that process.", style = "font-family: 'times'; font-sil30pt"),
           img(src = "QC.png", height = 200, width = 200),
           br(),
           h4("LCMS Setup"),
@@ -155,16 +159,24 @@ server = function(input, output, session) {
   output$SN         <- renderText({"Add those flags"})
 
 
+  
+  
   skyline.file <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
+
   output$data1 <- renderDataTable({
     skyline.file()
   })
-  
 
+ 
+  output$myFileName <- renderText({paste0("Your filename is:", input$skyline.file)})
+  
+  ##
+  
   supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   output$data2 <- renderDataTable({
     supporting.file()
   })
+  
 
   # First transform event -----------------------------------------------------------------
   skyline.transformed <- NULL
@@ -190,7 +202,6 @@ server = function(input, output, session) {
   })
 
  
-  
   
   # First flags event -----------------------------------------------------------------
   skyline.first.flagged <- NULL
@@ -268,16 +279,17 @@ server = function(input, output, session) {
       final.skyline <<- reactive(skyline.blk.flagged())
     }
 
-  
     output$data1 <- renderDataTable({
       final.skyline()
     })
   })
   
+
+  
   # Download -----------------------------------------------------------------
 
   output$Download <- downloadHandler(
-    
+
     output$Download <- downloadHandler(
       filename = function() {
         paste("TQSQC_", Sys.Date(), ".csv", sep = "")
