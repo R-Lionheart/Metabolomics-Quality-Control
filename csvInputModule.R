@@ -1,6 +1,4 @@
-# Module UI function
 csvFileInput <- function(id, label = "CSV file") {
-  # Create a namespace function using the provided id
   ns <- NS(id)
   
   tagList(
@@ -10,7 +8,6 @@ csvFileInput <- function(id, label = "CSV file") {
 }
 
 promptForFile <- function(input, output, session) {
-  # The selected file, if any
   return(reactive({
     # If no file is selected, don't do anything
     validate(need(input$file, message = FALSE))

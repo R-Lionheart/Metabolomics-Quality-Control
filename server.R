@@ -43,7 +43,7 @@ server = function(input, output, session) {
       skyline.transformed()
     }, options = list(pageLength = 10))
     output$classes_status <- renderText({paste("After transformation:")})
-    output$classes <- renderText({paste(colnames(skyline.transformed()), sapply(skyline.transformed(), class), " \n")})
+    output$classes <- renderText({paste(colnames(skyline.transformed()), ":", sapply(skyline.transformed(), class), " \n")})
   })
   
   # Retention Time Table event -----------------------------------------------------------------
@@ -119,7 +119,8 @@ server = function(input, output, session) {
         # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
         # TODO (rlionheart): also double check this table itself- is it correct?
         left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
-        mutate(Blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA)))
+        mutate(Blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA))) %>%
+        select(-Blank.Name, -Blank.Area)
     })
     output$data1 <- renderDataTable({
       skyline.blk.flagged()
