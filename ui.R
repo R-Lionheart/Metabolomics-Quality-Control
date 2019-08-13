@@ -109,61 +109,87 @@ ui <- fluidPage(useShinyjs(),
     # QE tabPanel -----------------------------------------------------------------
       tabPanel("QExactive",
         fluidRow(
-          column(4, helpText("This is some helpful text"), 
+          column(4, helpText("For best results, start on the left and add each column of flags sequentially."),
+            wellPanel(strong("Your Quality Control Parameters are:"),
+              textOutput("machine"),
+              textOutput("tags"),
+              textOutput("minimum"),
+              textOutput("retention"),
+              textOutput("blank"),
+              textOutput("signal"),
+              textOutput("ppm"),
+              tags$head(tags$style())),
+            br(),
+            wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
+            wellPanel(strong("Dataset Classes"),
+              textOutput("classes_status"),
+              verbatimTextOutput("classes"),
+              tags$head(tags$style("#classes_status{color: #26337a; font-size: 17px;}")
+              )
+            )
+          ),
+          column(3,  
+            br(),
+            wellPanel(strong("Retention Time Reference Table"), dataTableOutput("Retention.Time.References")),
+            br()
+          ),
+          column(4, 
+            br(),
+            wellPanel(strong("Blanks Reference Table"), dataTableOutput("Blank.Ratio.References"))
+          )
+        ),
+        hr(),
+        fluidRow(
+          column(10,
+            absolutePanel(
+              h3("Skyline File"),
+              dataTableOutput("data1"),
+              h3("Supporting File"),
+              dataTableOutput("data2")
+            )
+          ),
+          column(2,
+            h3(id = "analysis-start", "Start analysis here!"),
+            tags$style(HTML("#analysis-start{color: #26337a;}")),
+            helpText("Transform original character column classes to numeric values."),
             actionButton("transform", "Change variable classes"),
+            br(),
+            br(),
+            helpText("Create a table of acceptable Retention Time Ranges"),
+            actionButton("RT.Table", "Create Retention Time References"), 
+            br(),
+            br(),
+            # TODO (rlionheart): Clarify the blank table. 
+            helpText("Create a table of blank references."),
+            actionButton("Blk", "Create Blank Area References"),
+            br(), 
+            br(),
+            helpText("Flag those rows that fall outside the user-defined boundaries for Signal-to-Noise minimums, 
+                      parts-per-million flexibility, and area minimums."),
+            actionButton("first.flags", "SN, PPM, Area flags"),
+            br(),
+            br(),
+            helpText("Flag any rows with values that fall outside of the given Retention Time Range."),
+            actionButton("RT.flags", "Retention Time flags"),
+            br(),
+            br(),
+            # TODO (rlionheart): Clarify the blank flags 
+            helpText("Flag any rows with values that are larger than the maximum blank value."),
+            actionButton("blk.flags", "Blank flags"),
+            br(),
+            br(),
             actionButton("Stds", "Re-add standards"),
             downloadButton("Download", "Download your QC file here"),
             br(),
-            br(),
-            wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
-            br(),
-            wellPanel(strong("Retention Time Reference Table"), dataTableOutput("Retention.Time.References"))
-            ),
-                                                   column(3, wellPanel(strong("Your Quality Control Parameters are:"),
-                                                                       textOutput("machine"),
-                                                                       textOutput("tags"),
-                                                                       textOutput("minimum"),
-                                                                       textOutput("retention"),
-                                                                       textOutput("blank"),
-                                                                       textOutput("signal"),
-                                                                       textOutput("ppm"),
-                                                                       tags$head(tags$style())),
-                                                          br()
-                                                   ),
-                                                   column(4, wellPanel(strong("Dataset Classes"),
-                                                                       textOutput("classes_status"),
-                                                                       textOutput("classes")),
-                                                          wellPanel(strong("Blanks Reference Table"), dataTableOutput("Blank.Ratio.References"))
-                                                   )
-                                                 ),
-                                                 hr(),
-                                                 fluidRow(
-                                                   column(10,
-                                                          absolutePanel(
-                                                            dataTableOutput("data1"),
-                                                            dataTableOutput("data2")
-                                                          )
-                                                   ),
-                                                   column(2,
-                                                          actionButton("SN", "Signal to Noise flags"),
-                                                          br(),
-                                                          br(),
-                                                          actionButton("RT", "Retention Time flags"),
-                                                          br(),
-                                                          br(),
-                                                          actionButton("Blk", "Blank flags"),
-                                                          actionButton("Blk2", "Blank Flags Part II")
-                                                   )    
-                                                 )
-                                        ),
+            br()
+          )    
+        )
+      ),
                                         
-                                        # TQS tabPanel -----------------------------------------------------------------
-                                        tabPanel("Triple-Quadropole",
-                                                 helpText("Stay tuned for future developments!"))
-                            )
-                  )
-                ))
-
-
-
+    # TQS tabPanel -----------------------------------------------------------------
+    tabPanel("Triple-Quadrupole",
+      helpText("Stay tuned for future developments!")
+    )
+  )
+)))
 

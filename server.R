@@ -1,6 +1,7 @@
 # Server function -----------------------------------------------------------------
 server = function(input, output, session) {
-  output$machine   <- renderText({paste("Your machine type is", input$machine.type)})
+  
+  # Initial layout and data upload -----------------------------------------------------------------
   output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
   output$minimum   <- renderText({paste("You have selected", input$area.min, "as area")})
   output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility")})
@@ -9,11 +10,9 @@ server = function(input, output, session) {
   output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility")})
   
   output$classes_status <- renderText({paste("Before transformation:")})
-  output$classes <- renderText({paste(colnames(skyline.file()), ":", lapply(skyline.file(), class))})
-  
-  output$runtypes   <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
-  output$SN         <- renderText({"Add those flags"})
-  
+  output$classes       <- renderText({paste(colnames(skyline.file()), sapply(skyline.file(), class), " \n")})
+  output$runtypes      <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
+  output$SN            <- renderText({"Add those flags"})
   
   
   skyline.filename <- callModule(promptForFile, "skyline.file")
@@ -21,15 +20,12 @@ server = function(input, output, session) {
   
   output$data1 <- renderDataTable({
     skyline.file()
-  })
-  
-  
-  ##
+  }, options = list(pageLength = 10))
   
   supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
   output$data2 <- renderDataTable({
     supporting.file()
-  })
+  }, options = list(pageLength = 10))
   
   
   # First transform event -----------------------------------------------------------------
@@ -45,47 +41,27 @@ server = function(input, output, session) {
     })
     output$data1 <- renderDataTable({
       skyline.transformed()
-    })
+    }, options = list(pageLength = 10))
     output$classes_status <- renderText({paste("After transformation:")})
-    output$classes <- renderText({paste(colnames(skyline.transformed()), ":", lapply(skyline.transformed(), class))})
-    # TODO (rlionheart): include filter(Replicate.Name %in% std.tags), check for correct RT table.
-    output$Retention.Time.References <- renderDataTable(skyline.transformed() %>%
-                                                          select(Mass.Feature, Retention.Time) %>%
-                                                          group_by(Mass.Feature) %>%
-                                                          summarise(RT.References = mean((Retention.Time), na.rm = TRUE)))
+    output$classes <- renderText({paste(colnames(skyline.transformed()), sapply(skyline.transformed(), class), " \n")})
   })
   
-  
-  
-  # First flags event -----------------------------------------------------------------
-  skyline.first.flagged <- NULL
-  observeEvent(input$SN, {
-    skyline.first.flagged <<- reactive({skyline.transformed() %>% 
-        filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
-        mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
-        mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
-        mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
-    })
-    output$data1 <- renderDataTable({
-      skyline.first.flagged()
-    })
+  # Retention Time Table event -----------------------------------------------------------------
+  Retention.Time.References <- NULL
+  observeEvent(input$RT.Table, {
+    Retention.Time.References <<- reactive({skyline.transformed() %>%
+      # TODO (rlionheart): include filter(Replicate.Name %in% std.tags), check for correct RT table.
+      # TODO (rlionheart): make the Rt a range, not a number!
+      select(Mass.Feature, Retention.Time) %>%
+      group_by(Mass.Feature) %>%
+      summarise(RT.References = mean((Retention.Time), na.rm = TRUE))
+      })
+    output$Retention.Time.References <- renderDataTable({
+      Retention.Time.References()
+    }, options = list(pageLength = 10))
   })
   
-  # RT flags event -----------------------------------------------------------------
-  skyline.RT.flagged <- NULL
-  observeEvent(input$RT, {
-    skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-        # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
-        group_by(Mass.Feature) %>%
-        mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
-        mutate(RT.Flag = ifelse((abs((Retention.Time) - RT.Reference) > input$RT.flex), "RT.Flag", NA))
-    })
-    output$data1 <- renderDataTable({
-      skyline.RT.flagged()
-    })
-  })
-  
-  # Blank flags event -----------------------------------------------------------------
+  # Blank Reference Table event -----------------------------------------------------------------
   Blank.Ratio.References <- NULL
   observeEvent(input$Blk, {
     Blank.Ratio.References <<- reactive({skyline.file() %>%
@@ -104,11 +80,41 @@ server = function(input, output, session) {
     })
     output$Blank.Ratio.References <- renderDataTable({
       Blank.Ratio.References()
+    }, options = list(pageLength = 10))
+  })
+
+  # First flags event -----------------------------------------------------------------
+  skyline.first.flagged <- NULL
+  observeEvent(input$first.flags, {
+    skyline.first.flagged <<- reactive({skyline.transformed() %>% 
+        filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
+        mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
+        mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
+        mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
+    })
+    output$data1 <- renderDataTable({
+      skyline.first.flagged()
+    }, options = list(pageLength = 10))
+  })
+  
+  # RT flags event -----------------------------------------------------------------
+  skyline.RT.flagged <- NULL
+  observeEvent(input$RT.flags, {
+    skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
+        # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
+        group_by(Mass.Feature) %>%
+        mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
+        mutate(RT.Flag = ifelse((abs((Retention.Time) - RT.Reference) > input$RT.flex), "RT.Flag", NA)) %>%
+        select(-RT.Reference)
+    })
+    output$data1 <- renderDataTable({
+      skyline.RT.flagged()
     })
   })
   
+  # Blank flags event -----------------------------------------------------------------
   skyline.blk.flagged <- NULL
-  observeEvent(input$Blk2, {
+  observeEvent(input$blk.flags, {
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
         # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
         # TODO (rlionheart): also double check this table itself- is it correct?
@@ -129,7 +135,8 @@ server = function(input, output, session) {
       standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
       final.skyline <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
     } else {
-      output$std.status <- renderText({"Nothing to see here."})
+    # TODO (rlionheart): Should blanks be added as well?
+      output$std.status <- renderText({"No standards exist in this set. Table remains as is."})
       final.skyline <<- reactive(skyline.blk.flagged())
     }
     
