@@ -5,7 +5,7 @@ csvFileInput <- function(id, label = "CSV file") {
   
   tagList(
     fileInput(ns("file"), label),
-    checkboxInput(ns("heading"), "Has header")
+    checkboxInput(ns("heading"), "Has header", value = TRUE)
   )
 }
 
@@ -33,5 +33,6 @@ csvFile <- function(input, output, session, stringsAsFactors) {
   
   # Return the reactive that yields the data frame
   return(dataframe)
+  
 }
 
