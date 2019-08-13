@@ -9,14 +9,18 @@ csvFileInput <- function(id, label = "CSV file") {
   )
 }
 
-# Module server function
-csvFile <- function(input, output, session, stringsAsFactors) {
+promptForFile <- function(input, output, session) {
   # The selected file, if any
-  userFile <- reactive({
+  return(reactive({
     # If no file is selected, don't do anything
     validate(need(input$file, message = FALSE))
     input$file
-  })
+  }))
+}
+
+# Module server function
+csvFile <- function(input, output, session, stringsAsFactors) {
+  userFile <- promptForFile(input, output, session)
   
   # The user's data, parsed into a data frame
   dataframe <- reactive({
@@ -35,4 +39,6 @@ csvFile <- function(input, output, session, stringsAsFactors) {
   return(dataframe)
   
 }
+
+
 
