@@ -149,6 +149,7 @@ ui <- fluidPage(useShinyjs(),
             )
           ),
           column(2,
+            dataTableOutput("parameterTable"),
             h3(id = "analysis-start", "Start analysis here!"),
             tags$style(HTML("#analysis-start{color: #26337a;}")),
             helpText("Transform original character column classes to numeric values. Drop unnecessary columns."),
@@ -183,7 +184,8 @@ ui <- fluidPage(useShinyjs(),
             br(),
             br(),
             helpText("The new, QC'd file will be downloaded with the modifiers 'TQSQC_' and system date attached to the original filename."),
-            downloadButton("Download", "Download your QC + parameter files here"),
+            downloadButton("Download", "Download your QC file here"),
+            downloadButton("Parameters", "Download your parameter file here"),
             br(),
             br()
           )    

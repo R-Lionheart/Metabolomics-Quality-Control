@@ -28,6 +28,27 @@ server = function(input, output, session) {
   }, options = list(pageLength = 10))
   
   
+  ##
+  dataReactive <- reactive({
+    data.frame(text = c(input$area.min, input$RT.flex, input$blank.ratio.max))
+    
+  })
+  
+  output$parameterTable <- DT::renderDataTable({
+    dataReactive()
+  })
+  
+  output$Parameters <- downloadHandler(
+    filename = function() { 
+      paste("dataset-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(dataReactive(), file)
+      
+    })
+  ###
+  
+  
   # First transform event -----------------------------------------------------------------
   skyline.transformed <- NULL
   observeEvent(input$transform, {
