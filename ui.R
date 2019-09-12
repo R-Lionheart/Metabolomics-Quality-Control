@@ -183,7 +183,7 @@ ui <- fluidPage(useShinyjs(),
             br(),
             br(),
             helpText("The new, QC'd file will be downloaded with the modifiers 'TQSQC_' and system date attached to the original filename."),
-            downloadButton("Download", "Download your QC file here"),
+            downloadButton("Download", "Download your QC + parameter files here"),
             br(),
             br()
           )    
