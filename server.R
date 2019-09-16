@@ -1,7 +1,7 @@
 # Server function -----------------------------------------------------------------
 server = function(input, output, session) {
   
-  # Initial layout and data upload -----------------------------------------------------------------
+  # Paramter entry, transformation, runtype ID and initial flags -----------------------------------------------------------------
   output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
   output$minimum   <- renderText({paste("You have selected", input$area.min, "as area")})
   output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility")})
@@ -14,7 +14,7 @@ server = function(input, output, session) {
   output$runtypes      <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
   output$SN            <- renderText({"Add those flags"})
   
-  
+  # Data upload  -----------------------------------------------------------------
   skyline.filename <- callModule(promptForFile, "skyline.file")
   skyline.file <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
   
@@ -26,27 +26,6 @@ server = function(input, output, session) {
   output$data2 <- renderDataTable({
     supporting.file()
   }, options = list(pageLength = 10))
-  
-  
-  ##
-  dataReactive <- reactive({
-    data.frame(text = c(input$area.min, input$RT.flex, input$blank.ratio.max))
-    
-  })
-  
-  output$parameterTable <- DT::renderDataTable({
-    dataReactive()
-  })
-  
-  output$Parameters <- downloadHandler(
-    filename = function() { 
-      paste("dataset-", Sys.Date(), ".csv", sep="")
-    },
-    content = function(file) {
-      write.csv(dataReactive(), file)
-      
-    })
-  ###
   
   
   # First transform event -----------------------------------------------------------------
@@ -167,8 +146,23 @@ server = function(input, output, session) {
     })
   })
 
-  # Comment in parameters -----------------------------------------------------------------
+  # Parameter table-----------------------------------------------------------------
+  parametersReactive <- reactive({
+    data.frame(Parameter= c("Area minimum", "Retention time flexibility", "Blank Ratio Maximum", "Signal to Noise Minimum", "Parts per million flexibility"), 
+               Values = c(input$area.min, input$RT.flex, input$blank.ratio.max, input$SN.min, input$ppm.flex))
+  })
   
+  output$parameterTable <- DT::renderDataTable({
+    parametersReactive()
+  })
+  
+  output$Parameters <- downloadHandler(
+    filename = function() { 
+      paste("QE_Parameters_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(parametersReactive(), file)
+    })
   
   
   # Download -----------------------------------------------------------------
@@ -177,7 +171,7 @@ server = function(input, output, session) {
     
     output$Download <- downloadHandler(
       filename = function() {
-        paste("TQSQC_", Sys.Date(), skyline.filename(), sep = "")
+        paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
       },
       content = function(file) {
         write.csv(final.skyline(), file)
