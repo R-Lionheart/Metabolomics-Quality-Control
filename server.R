@@ -156,44 +156,47 @@ server = function(input, output, session) {
     parametersReactive()
   })
   
+  # Download both files-----------------------------------------------------------------
+  
+  # output$QC_file <- downloadHandler(
+  #   filename = function() {
+  #     paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
+  #   },
+  #   content = function(file) {
+  #     write.csv(final.skyline(), file)
+  #   }
+  # )
+  # 
+  # output$Parameters <- downloadHandler(
+  #   filename = function() {
+  #     paste("QE_Parameters_", Sys.Date(), ".csv", sep = "")
+  #   },
+  #   content = function(file) {
+  #     write.csv(parametersReactive(), file)
+  #   }
+  # )
+
+  
   output$Parameters <- downloadHandler(
-    filename = function() { 
-      paste("QE_Parameters_", Sys.Date(), ".csv", sep = "")
+    filename = function(){
+      paste0(input$text,".zip")
     },
-    content = function(file) {
-      write.csv(parametersReactive(), file)
-    })
-  
-  
-  # Download -----------------------------------------------------------------
-  
-  output$Download <- downloadHandler(
     
-    output$Download <- downloadHandler(
-      filename = function() {
-        paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
-      },
-      content = function(file) {
-        write.csv(final.skyline(), file)
+    content = function(file){
+      #go to a temp dir to avoid permission issues
+      owd <- setwd(tempdir())
+      on.exit(setwd(owd))
+      files <- NULL;
+      
+      #loop through the sheets
+      for (i in c(input$data1, input$parameterTable)){
+        #write each sheet to a csv file, save the name
+        fileName <- paste(input$text,"_0",i,".csv",sep = "")
+        write.csv(data()$wb[i],fileName,sep = ';', row.names = F, col.names = T)
+        files <- c(fileName, files)
       }
-    )
+      #create the zip file
+      zip(file, files)
+    }
   )
-  
 }
-
-
-# -----------------------------------------------------------------
-#shinyApp(ui, server)
-
-# con <- file(paste("TQSQC_", basename(input_file), sep = ""), open = "wt")
-# writeLines(paste("Hello! Welcome to the world of TQS Quality Control! ",
-#                  "Minimum height for a real peak: ", min.height, ". ",
-#                  "Minimum area for a real peak: ", area.min, ". ",
-#                  "RT flexibility: ", RT.flex, ". ",
-#                  "Ion ratio (IR) flexibility: ", IR.flex, ". ",
-#                  "Blank can be this fraction of a sample: ", blk.thresh, ". ",
-#                  "S/N ratio: " , SN.min, ". ",
-#                  "Processed on: ", Sys.time(), ". ",
-#                  sep = ""), con)
-# write.csv(final.table, con, row.names = FALSE)
-# close(con)
