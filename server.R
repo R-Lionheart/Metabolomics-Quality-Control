@@ -10,20 +10,20 @@ server = function(input, output, session) {
   output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility")})
   
   output$classes_status <- renderText({paste("Before transformation:")})
-  output$classes       <- renderText({paste(colnames(skyline.file()), sapply(skyline.file(), class), " \n")})
-  output$runtypes      <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
-  output$SN            <- renderText({"Add those flags"})
+  output$classes        <- renderText({paste(colnames(skyline.file()), sapply(skyline.file(), class), " \n")})
+  output$runtypes       <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
+  output$SN             <- renderText({"Add those flags"})
   
   # Data upload  -----------------------------------------------------------------
   skyline.filename <- callModule(promptForFile, "skyline.file")
-  skyline.file <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
+  skyline.file     <- callModule(csvFile, "skyline.file", stringsAsFactors = FALSE)
   
-  output$data1 <- renderDataTable({
+  output$skyline1 <- renderDataTable({
     skyline.file()
   }, options = list(pageLength = 10))
   
   supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
-  output$data2 <- renderDataTable({
+  output$supporting1 <- renderDataTable({
     supporting.file()
   }, options = list(pageLength = 10))
   
@@ -39,9 +39,11 @@ server = function(input, output, session) {
         mutate(Mass.Error.PPM = suppressWarnings(as.numeric(as.character(Mass.Error.PPM)))) %>%
         rename(Mass.Feature   = Precursor.Ion.Name)
     })
-    output$data1 <- renderDataTable({
+    
+    output$skyline1 <- renderDataTable({
       skyline.transformed()
     }, options = list(pageLength = 10))
+    
     output$classes_status <- renderText({paste("After transformation:")})
     output$classes <- renderText({paste(colnames(skyline.transformed()), ":", sapply(skyline.transformed(), class), " \n")})
   })
@@ -50,12 +52,19 @@ server = function(input, output, session) {
   Retention.Time.References <- NULL
   observeEvent(input$RT.Table, {
     Retention.Time.References <<- reactive({skyline.transformed() %>%
-      # TODO (rlionheart): include filter(Replicate.Name %in% std.tags), check for correct RT table.
-      # TODO (rlionheart): make the Rt a range, not a number!
-      select(Mass.Feature, Retention.Time) %>%
+      # TODO (rlionheart): include filter(Replicate.Name %in% std.tags).
+      # TODO (rlionheart): What about when there are no standards?
+      # TODO (rlionheart): Can't reference this table during Flags event.
+      select(Replicate.Name, Mass.Feature, Retention.Time) %>%
+      mutate(Run.Type = (tolower(str_extract(skyline.transformed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>%
       group_by(Mass.Feature) %>%
-      summarise(RT.References = mean((Retention.Time), na.rm = TRUE))
+      filter(Run.Type == "std") %>%
+      mutate(RT.min = min(Retention.Time, na.rm = TRUE)) %>%
+      mutate(RT.max = max(Retention.Time, na.rm = TRUE)) %>%
+      select(Mass.Feature, RT.min, RT.max) %>%
+      unique()
       })
+      
     output$Retention.Time.References <- renderDataTable({
       Retention.Time.References()
     }, options = list(pageLength = 10))
@@ -65,19 +74,29 @@ server = function(input, output, session) {
   Blank.Ratio.References <- NULL
   observeEvent(input$Blk, {
     Blank.Ratio.References <<- reactive({skyline.file() %>%
-        #TODO (rlionheart): see if this repetitive code can be dropped, and the same transformation function can be applied to multiple files.
-        #TODO (rlionheart): also double check this table itself- is it correct?
         filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
-        select(-Protein.Name, -Protein) %>%
-        rename(Mass.Feature = Precursor.Ion.Name) %>%
         rename(Blank.Name = Replicate.Name,
                Blank.Area = Area) %>%
+        select(-Protein.Name, -Protein) %>%
+        rename(Mass.Feature = Precursor.Ion.Name) %>%
         select(Blank.Name, Mass.Feature, Blank.Area) %>%
-        left_join(supporting.file(), by = "Blank.Name") %>%
+        left_join(supporting.file, by = "Blank.Name") %>% 
+        select(-Blank.Name) %>%
         arrange(desc(Blank.Area)) %>%
-        group_by(Mass.Feature, Replicate.Name) %>%
+        group_by(Mass.Feature, Replicate.Name) %>% 
         filter(row_number() == 1)
+        
+
+        #select(Blank.Name, Mass.Feature, Blank.Area) %>%
+        unique()
     })
+    
+    ###
+
+
+    ####
+    
+    
     output$Blank.Ratio.References <- renderDataTable({
       Blank.Ratio.References()
     }, options = list(pageLength = 10))
@@ -92,7 +111,7 @@ server = function(input, output, session) {
         mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
         mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
     })
-    output$data1 <- renderDataTable({
+    output$skyline1 <- renderDataTable({
       skyline.first.flagged()
     }, options = list(pageLength = 10))
   })
@@ -101,13 +120,15 @@ server = function(input, output, session) {
   skyline.RT.flagged <- NULL
   observeEvent(input$RT.flags, {
     skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-        # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
-        group_by(Mass.Feature) %>%
-        mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
-        mutate(RT.Flag = ifelse((abs((Retention.Time) - RT.Reference) > input$RT.flex), "RT.Flag", NA)) %>%
-        select(-RT.Reference)
+      group_by(Mass.Feature) 
+      # TODO (rlionheart): Figure how wtf is happening here. Can't reference another table?
+      
+      #mutate(RT.max = ifelse((Retention.Time.References()$RT.max > 5), "yay", "nay"))
+      #mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
+      #mutate(RT.Flag = ifelse((Retention.Time >= (Retention.Time.References()$RT.max + input$RT.flex) | Retention.Time <= (Retention.Time.References()$RT.min - input$RT.flex)), "RT.Flag", NA))
+      #select(-RT.Reference)
     })
-    output$data1 <- renderDataTable({
+    output$skyline1 <- renderDataTable({
       skyline.RT.flagged()
     })
   })
@@ -116,13 +137,13 @@ server = function(input, output, session) {
   skyline.blk.flagged <- NULL
   observeEvent(input$blk.flags, {
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
-        # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
+        # TODO (rlionheart): Same issue as Retention time. How to reference another table?
         # TODO (rlionheart): also double check this table itself- is it correct?
         left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
         mutate(Blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA))) %>%
         select(-Blank.Name, -Blank.Area)
     })
-    output$data1 <- renderDataTable({
+    output$skyline1 <- renderDataTable({
       skyline.blk.flagged()
     })
   })
@@ -140,7 +161,7 @@ server = function(input, output, session) {
       skyline.stds.added <<- reactive(skyline.blk.flagged())
     }
     
-    output$data1 <- renderDataTable({
+    output$skyline1 <- renderDataTable({
       skyline.stds.added()
     })
   })
@@ -161,7 +182,7 @@ server = function(input, output, session) {
      final.skyline <<- reactive({final.skyline() %>%
        bind_rows(parametersReactive())
      })
-     output$data1 <- renderDataTable({
+     output$skyline1 <- renderDataTable({
        final.skyline()
      })
    })

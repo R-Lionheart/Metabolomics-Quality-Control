@@ -1,8 +1,0 @@
-## Comments from first Shiny presentation, August 21 2019
-
-
-- Add the damn comments into the exported csv. 
-
-- Somehow save the settings for the run. IE, QC parameters. So it doesn't need to be entered every time. Can the shiny app source a table or csv of values as an option? Maybe export the settings from the first run?
-
-- Can the shiny page be called from a markdown? Ie, can it be sourced? KRH needs to have a long pipeline that does everything from run samples to producing figures. How to best avoid the 
