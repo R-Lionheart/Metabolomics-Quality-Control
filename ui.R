@@ -5,6 +5,8 @@ library(shinythemes)
 library(shinyWidgets)
 library(tidyverse)
 
+options(scipen = 999)
+
 # -----------------------------------------------------------------
 ui <- fluidPage(useShinyjs(),
   theme = shinytheme("yeti"),
@@ -110,15 +112,6 @@ ui <- fluidPage(useShinyjs(),
       tabPanel("QExactive",
         fluidRow(
           column(4, helpText("For best results, start on the right hand side where it says 'Start Analysis here!' and move downwards through each button."),
-            wellPanel(strong("Your Quality Control Parameters are:"),
-              textOutput("machine"),
-              textOutput("tags"),
-              textOutput("minimum"),
-              textOutput("retention"),
-              textOutput("blank"),
-              textOutput("signal"),
-              textOutput("ppm"),
-              tags$head(tags$style())),
             br(),
             wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
             wellPanel(strong("Dataset Classes"),
@@ -149,6 +142,7 @@ ui <- fluidPage(useShinyjs(),
             )
           ),
           column(2,
+            h3("Parameter Table"),
             dataTableOutput("parameterTable"),
             h3(id = "analysis-start", "Start analysis here!"),
             tags$style(HTML("#analysis-start{color: #26337a;}")),
@@ -184,8 +178,8 @@ ui <- fluidPage(useShinyjs(),
             br(),
             br(),
             helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC' and system date attached to the original filename."),
-            #downloadButton("QC_file", "Download your QC file here"),
-            textInput("filename","Indicate filename:"),
+            actionButton("addrows", "Add parameters directly to csv."),
+            downloadButton("QC_file", "Download your QC file here"),
             downloadButton("Parameters", "Download your parameter file here"),
             br(),
             br()

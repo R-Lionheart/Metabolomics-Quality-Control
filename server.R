@@ -136,7 +136,6 @@ server = function(input, output, session) {
       standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
       final.skyline <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
     } else {
-    # TODO (rlionheart): Should blanks be added as well?
       output$std.status <- renderText({"No standards exist in this set. Table remains as is."})
       final.skyline <<- reactive(skyline.blk.flagged())
     }
@@ -152,51 +151,47 @@ server = function(input, output, session) {
                Values = c(input$area.min, input$RT.flex, input$blank.ratio.max, input$SN.min, input$ppm.flex))
   })
   
-  output$parameterTable <- DT::renderDataTable({
+  output$parameterTable <- renderDataTable({
     parametersReactive()
   })
   
-  # Download both files-----------------------------------------------------------------
-  
-  # output$QC_file <- downloadHandler(
-  #   filename = function() {
-  #     paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
-  #   },
-  #   content = function(file) {
-  #     write.csv(final.skyline(), file)
-  #   }
-  # )
+  #####
+  # skyline.RT.flagged <- NULL
+  # observeEvent(input$RT.flags, {
+  #   skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
+  #       # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
+  #       group_by(Mass.Feature) %>%
+  #       mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
+  #       mutate(RT.Flag = ifelse((abs((Retention.Time) - RT.Reference) > input$RT.flex), "RT.Flag", NA)) %>%
+  #       select(-RT.Reference)
+  #   })
+  #   output$data1 <- renderDataTable({
+  #     skyline.RT.flagged()
+  #   })
+  # })
   # 
-  # output$Parameters <- downloadHandler(
-  #   filename = function() {
-  #     paste("QE_Parameters_", Sys.Date(), ".csv", sep = "")
-  #   },
-  #   content = function(file) {
-  #     write.csv(parametersReactive(), file)
-  #   }
-  # )
 
+    #write.csv(final.skyline(), file = parametersReactive(), append=TRUE)
+
+  #####
+  
+  # Download both files-----------------------------------------------------------------
+
+  output$QC_file <- downloadHandler(
+    filename = function() {
+      paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
+    },
+    content = function(file) {
+      write.csv(final.skyline(), file)
+    }
+  )
   
   output$Parameters <- downloadHandler(
-    filename = function(){
-      paste0(input$text,".zip")
+    filename = function() {
+      paste("QE_Parameters_", Sys.Date(), ".csv", sep = "")
     },
-    
-    content = function(file){
-      #go to a temp dir to avoid permission issues
-      owd <- setwd(tempdir())
-      on.exit(setwd(owd))
-      files <- NULL;
-      
-      #loop through the sheets
-      for (i in c(input$data1, input$parameterTable)){
-        #write each sheet to a csv file, save the name
-        fileName <- paste(input$text,"_0",i,".csv",sep = "")
-        write.csv(data()$wb[i],fileName,sep = ';', row.names = F, col.names = T)
-        files <- c(fileName, files)
-      }
-      #create the zip file
-      zip(file, files)
+    content = function(file) {
+      write.csv(parametersReactive(), file)
     }
   )
 }
