@@ -128,20 +128,20 @@ server = function(input, output, session) {
   })
   
   # Re-adding stds event -----------------------------------------------------------------
-  final.skyline <- NULL
+  skyline.stds.added <- NULL
   observeEvent(input$Stds, {
     Stds.test <- grepl("_Std_", skyline.file()$Replicate.Name)
     if (any(Stds.test == TRUE)) {
       output$std.status <- renderText({"Standards in set. Joining them to the bottom of the dataset!"})
       standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
-      final.skyline <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
+      skyline.stds.added <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
     } else {
       output$std.status <- renderText({"No standards exist in this set. Table remains as is."})
-      final.skyline <<- reactive(skyline.blk.flagged())
+      skyline.stds.added <<- reactive(skyline.blk.flagged())
     }
     
     output$data1 <- renderDataTable({
-      final.skyline()
+      skyline.stds.added()
     })
   })
 
@@ -156,22 +156,18 @@ server = function(input, output, session) {
   })
   
   #####
-  # skyline.RT.flagged <- NULL
-  # observeEvent(input$RT.flags, {
-  #   skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-  #       # TODO (rlionheart): This is repetitive- figure out a solution for not repeating the code. This is a temp fix.
-  #       group_by(Mass.Feature) %>%
-  #       mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
-  #       mutate(RT.Flag = ifelse((abs((Retention.Time) - RT.Reference) > input$RT.flex), "RT.Flag", NA)) %>%
-  #       select(-RT.Reference)
-  #   })
-  #   output$data1 <- renderDataTable({
-  #     skyline.RT.flagged()
-  #   })
-  # })
-  # 
+   final.skyline <- NULL
+   observeEvent(input$addrows, {
+     final.skyline <<- reactive({final.skyline() %>%
+       bind_rows(parametersReactive())
+     })
+     output$data1 <- renderDataTable({
+       final.skyline()
+     })
+   })
+   
 
-    #write.csv(final.skyline(), file = parametersReactive(), append=TRUE)
+
 
   #####
   
