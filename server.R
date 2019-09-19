@@ -75,28 +75,18 @@ server = function(input, output, session) {
   observeEvent(input$Blk, {
     Blank.Ratio.References <<- reactive({skyline.file() %>%
         filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
-        rename(Blank.Name = Replicate.Name,
-               Blank.Area = Area) %>%
         select(-Protein.Name, -Protein) %>%
         rename(Mass.Feature = Precursor.Ion.Name) %>%
+        rename(Blank.Name = Replicate.Name,
+               Blank.Area = Area) %>%
         select(Blank.Name, Mass.Feature, Blank.Area) %>%
-        left_join(supporting.file, by = "Blank.Name") %>% 
-        select(-Blank.Name) %>%
-        arrange(desc(Blank.Area)) %>%
-        group_by(Mass.Feature, Replicate.Name) %>% 
-        filter(row_number() == 1)
-        
-
-        #select(Blank.Name, Mass.Feature, Blank.Area) %>%
+        left_join(supporting.file(), by = "Blank.Name") %>%
+        group_by(Mass.Feature, Replicate.Name) %>%
+        filter(row_number() == 1) %>%
         unique()
+        #select(Blank.Name, Mass.Feature, Blank.Area) %>%
     })
-    
-    ###
-
-
-    ####
-    
-    
+  
     output$Blank.Ratio.References <- renderDataTable({
       Blank.Ratio.References()
     }, options = list(pageLength = 10))
@@ -140,7 +130,7 @@ server = function(input, output, session) {
         # TODO (rlionheart): Same issue as Retention time. How to reference another table?
         # TODO (rlionheart): also double check this table itself- is it correct?
         left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
-        mutate(Blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "Blank.Flag", NA))) %>%
+        mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
         select(-Blank.Name, -Blank.Area)
     })
     output$skyline1 <- renderDataTable({
@@ -176,7 +166,6 @@ server = function(input, output, session) {
     parametersReactive()
   })
   
-  #####
    final.skyline <- NULL
    observeEvent(input$addrows, {
      final.skyline <<- reactive({final.skyline() %>%
@@ -187,13 +176,7 @@ server = function(input, output, session) {
      })
    })
    
-
-
-
-  #####
-  
   # Download both files-----------------------------------------------------------------
-
   output$QC_file <- downloadHandler(
     filename = function() {
       paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
