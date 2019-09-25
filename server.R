@@ -49,18 +49,26 @@ server = function(input, output, session) {
   
   # Retention Time Table event -----------------------------------------------------------------
   observeEvent(input$RT.Table, {
-    Retention.Time.References <<- reactive({skyline.transformed() %>%
-      # TODO (rlionheart): include filter(Replicate.Name %in% std.tags).
-      # TODO (rlionheart): What about when there are no standards?
-      select(Replicate.Name, Mass.Feature, Retention.Time) %>%
-      mutate(Run.Type = (tolower(str_extract(skyline.transformed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>%
-      group_by(Mass.Feature) %>%
-      filter(Run.Type == "std") %>%
-      mutate(RT.min = min(Retention.Time, na.rm = TRUE)) %>%
-      mutate(RT.max = max(Retention.Time, na.rm = TRUE)) %>%
-      select(Mass.Feature, RT.min, RT.max) %>%
-      unique()
+    Stds.test <- grepl("_Std_", skyline.transformed()$Replicate.Name)
+    if (any(Stds.test == TRUE)) {
+      Retention.Time.References <<- reactive({skyline.transformed() %>%
+        # TODO (rlionheart): include filter(Replicate.Name %in% std.tags).
+        select(Replicate.Name, Mass.Feature, Retention.Time) %>%
+        mutate(Run.Type = (tolower(str_extract(skyline.transformed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>% 
+        group_by(Mass.Feature) %>%
+        filter(Run.Type == "std") %>%
+        mutate(RT.min = min(Retention.Time, na.rm = TRUE)) %>%
+        mutate(RT.max = max(Retention.Time, na.rm = TRUE)) %>%
+        select(Mass.Feature, RT.min, RT.max) %>%
+        unique()
       })
+    } else {
+      Retention.Time.References <<- reactive({skyline.transformed() %>%
+        mutate(FakeColumn = "placeholder")
+      })
+    }
+
+
       
     output$Retention.Time.References <- renderDataTable({
       Retention.Time.References()
