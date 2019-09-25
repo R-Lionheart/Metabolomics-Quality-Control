@@ -6,6 +6,7 @@ library(shinyWidgets)
 library(tidyverse)
 
 options(scipen = 999)
+options(shiny.error = browser)
 
 # Page Setup-----------------------------------------------------------------
 ui <- fluidPage(useShinyjs(),

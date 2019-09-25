@@ -29,7 +29,7 @@ server = function(input, output, session) {
   
   
   # First transform event -----------------------------------------------------------------
-  skyline.transformed <- NULL
+  #skyline.transformed <- NULL
   observeEvent(input$transform, {
     skyline.transformed <<- reactive({skyline.file() %>% 
         select(-Protein.Name, -Protein) %>%
@@ -110,7 +110,8 @@ server = function(input, output, session) {
   skyline.RT.flagged <- NULL
   observeEvent(input$RT.flags, {
     skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-      group_by(Mass.Feature) 
+      group_by(Mass.Feature)  %>%
+      mutate(RT.Placeholder = "placeholder flag")
       # TODO (rlionheart): Figure how wtf is happening here. Can't reference another table?
       
       #mutate(RT.max = ifelse((Retention.Time.References()$RT.max > 5), "yay", "nay"))
@@ -168,11 +169,14 @@ server = function(input, output, session) {
   
    final.skyline <- NULL
    observeEvent(input$addrows, {
-     final.skyline <<- reactive({final.skyline() %>%
+     print("this is before")
+     final.skyline <<- reactive({skyline.stds.added() %>%
        bind_rows(parametersReactive())
      })
      output$skyline1 <- renderDataTable({
        final.skyline()
+       print("Hello there after")
+       
      })
    })
    
