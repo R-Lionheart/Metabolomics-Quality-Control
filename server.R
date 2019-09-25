@@ -52,7 +52,6 @@ server = function(input, output, session) {
     Stds.test <- grepl("_Std_", skyline.transformed()$Replicate.Name)
     if (any(Stds.test == TRUE)) {
       Retention.Time.References <<- reactive({skyline.transformed() %>%
-        # TODO (rlionheart): include filter(Replicate.Name %in% std.tags).
         select(Replicate.Name, Mass.Feature, Retention.Time) %>%
         mutate(Run.Type = (tolower(str_extract(skyline.transformed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>% 
         group_by(Mass.Feature) %>%
@@ -64,11 +63,14 @@ server = function(input, output, session) {
       })
     } else {
       Retention.Time.References <<- reactive({skyline.transformed() %>%
-        mutate(FakeColumn = "placeholder")
+        filter(Replicate.Name %in% input$std.tags) %>%
+        select(Replicate.Name, Mass.Feature, Retention.Time) %>%
+        group_by(Mass.Feature) %>%
+        mutate(RT.min = min(Retention.Time, na.rm = TRUE)) %>%
+        mutate(RT.max = max(Retention.Time, na.rm = TRUE)) %>%
+        select(Mass.Feature, Replicate.Name, RT.min, RT.max) 
       })
     }
-
-
       
     output$Retention.Time.References <- renderDataTable({
       Retention.Time.References()
