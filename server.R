@@ -29,7 +29,6 @@ server = function(input, output, session) {
   
   
   # First transform event -----------------------------------------------------------------
-  #skyline.transformed <- NULL
   observeEvent(input$transform, {
     skyline.transformed <<- reactive({skyline.file() %>% 
         select(-Protein.Name, -Protein) %>%
@@ -49,7 +48,6 @@ server = function(input, output, session) {
   })
   
   # Retention Time Table event -----------------------------------------------------------------
-  Retention.Time.References <- NULL
   observeEvent(input$RT.Table, {
     Retention.Time.References <<- reactive({skyline.transformed() %>%
       # TODO (rlionheart): include filter(Replicate.Name %in% std.tags).
@@ -71,7 +69,6 @@ server = function(input, output, session) {
   })
   
   # Blank Reference Table event -----------------------------------------------------------------
-  Blank.Ratio.References <- NULL
   observeEvent(input$Blk, {
     Blank.Ratio.References <<- reactive({skyline.file() %>%
         filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
@@ -93,7 +90,6 @@ server = function(input, output, session) {
   })
 
   # First flags event -----------------------------------------------------------------
-  skyline.first.flagged <- NULL
   observeEvent(input$first.flags, {
     skyline.first.flagged <<- reactive({skyline.transformed() %>% 
         filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
@@ -107,7 +103,6 @@ server = function(input, output, session) {
   })
   
   # RT flags event -----------------------------------------------------------------
-  skyline.RT.flagged <- NULL
   observeEvent(input$RT.flags, {
     skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
       group_by(Mass.Feature)  %>%
@@ -125,7 +120,6 @@ server = function(input, output, session) {
   })
   
   # Blank flags event -----------------------------------------------------------------
-  skyline.blk.flagged <- NULL
   observeEvent(input$blk.flags, {
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
         # TODO (rlionheart): Same issue as Retention time. How to reference another table?
@@ -140,7 +134,6 @@ server = function(input, output, session) {
   })
   
   # Re-adding stds event -----------------------------------------------------------------
-  skyline.stds.added <- NULL
   observeEvent(input$Stds, {
     Stds.test <- grepl("_Std_", skyline.file()$Replicate.Name)
     if (any(Stds.test == TRUE)) {
@@ -167,16 +160,12 @@ server = function(input, output, session) {
     parametersReactive()
   })
   
-   final.skyline <- NULL
    observeEvent(input$addrows, {
-     print("this is before")
      final.skyline <<- reactive({skyline.stds.added() %>%
        bind_rows(parametersReactive())
      })
      output$skyline1 <- renderDataTable({
        final.skyline()
-       print("Hello there after")
-       
      })
    })
    
