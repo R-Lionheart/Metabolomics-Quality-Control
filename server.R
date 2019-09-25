@@ -52,7 +52,6 @@ server = function(input, output, session) {
     Retention.Time.References <<- reactive({skyline.transformed() %>%
       # TODO (rlionheart): include filter(Replicate.Name %in% std.tags).
       # TODO (rlionheart): What about when there are no standards?
-      # TODO (rlionheart): Can't reference this table during Flags event.
       select(Replicate.Name, Mass.Feature, Retention.Time) %>%
       mutate(Run.Type = (tolower(str_extract(skyline.transformed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>%
       group_by(Mass.Feature) %>%
@@ -105,14 +104,9 @@ server = function(input, output, session) {
   # RT flags event -----------------------------------------------------------------
   observeEvent(input$RT.flags, {
     skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-      group_by(Mass.Feature)  %>%
-      mutate(RT.Placeholder = "placeholder flag")
-      # TODO (rlionheart): Figure how wtf is happening here. Can't reference another table?
-      
-      #mutate(RT.max = ifelse((Retention.Time.References()$RT.max > 5), "yay", "nay"))
-      #mutate(RT.Reference = mean((Retention.Time), na.rm = TRUE)) %>%
-      #mutate(RT.Flag = ifelse((Retention.Time >= (Retention.Time.References()$RT.max + input$RT.flex) | Retention.Time <= (Retention.Time.References()$RT.min - input$RT.flex)), "RT.Flag", NA))
-      #select(-RT.Reference)
+      left_join(Retention.Time.References(), by = "Mass.Feature") %>%
+      mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
+      select(-RT.min, -RT.max)
     })
     output$skyline1 <- renderDataTable({
       skyline.RT.flagged()
