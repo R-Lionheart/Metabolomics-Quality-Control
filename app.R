@@ -23,7 +23,6 @@ promptForFile <- function(input, output, session) {
   }))
 }
 
-# Module server function
 csvFile <- function(input, output, session, stringsAsFactors) {
   userFile <- promptForFile(input, output, session)
 
@@ -59,7 +58,7 @@ ui <- fluidPage(useShinyjs(),
 
                 # Sidebar Panel -----------------------------------------------------------------
                 sidebarLayout(
-                  sidebarPanel(width = 4,
+                  sidebarPanel(width = 3,
                                wellPanel(id = "tPanel", style = "overflow-y:scroll; max-height: 500",
                                          helpText("Upload your file(s) below. Please confirm if your file is MSDIAL or Skyline."),
 
@@ -67,11 +66,12 @@ ui <- fluidPage(useShinyjs(),
                                                   See Information tab for more details."),
 
                                          csvFileInput("skyline.file", h5("Output file from Skyline.")),
-                                         csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
+                                         #csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
                                          hr(),
 
                                          textInput("std.tags", h5("Standard tag input (QE only)"),
                                                    value = "Enter samples..."),
+                                         wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
                                          hr(),
 
                                          helpText("Pick the minimum height to be counted as a 'real' peak (QE suggestion: HILIC - 1000, Cyano - 5000)"),
@@ -101,7 +101,7 @@ ui <- fluidPage(useShinyjs(),
                   ),
 
                   # Information tabPanel -----------------------------------------------------------------
-                  mainPanel(width = 10,
+                  mainPanel(width = 8,
                             tabsetPanel(type = "tabs",
                                         tabPanel("Information", h2("Using the Ingalls Lab Quality Control", align = "center"),
                                                  br(),
@@ -167,7 +167,6 @@ ui <- fluidPage(useShinyjs(),
                         fluidRow(
                           column(3, helpText("For best results, start on the right hand side where it says 'Start Analysis here!' and move downwards through each button."),
                                  br(),
-                                 wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
                                  wellPanel(strong("Dataset Classes"),
                                            textOutput("classes_status"),
                                            verbatimTextOutput("classes"),
@@ -193,9 +192,9 @@ ui <- fluidPage(useShinyjs(),
                           column(10,
                                  absolutePanel(
                                    h3("Skyline File"),
-                                   dataTableOutput("skyline1"),
-                                   h3("Supporting File"),
-                                   dataTableOutput("supporting1")
+                                   dataTableOutput("skyline1")
+                                   #h3("Supporting File"),
+                                   #dataTableOutput("supporting1")
                                  )
                           ),
 
@@ -214,46 +213,41 @@ ui <- fluidPage(useShinyjs(),
                                  br(),
                                  br(),
 
-                                 helpText("Create a table of blank references for creation of blank flags."),
-                                 actionButton("Blk", "Create Blank Area References"),
-                                 br(),
-                                 br(),
+                                 # helpText("Create a table of blank references for creation of blank flags."),
+                                 # actionButton("Blk", "Create Blank Area References"),
+                                 # br(),
+                                 # br(),
 
-                                 helpText("Flag those rows that fall outside the user-defined boundaries for Signal-to-Noise minimums,
-                      parts-per-million flexibility, and area minimums."),
-                      actionButton("first.flags", "SN, PPM, Area flags"),
-                      br(),
-                      br(),
+                                 #helpText("Flag those rows that fall outside the user-defined boundaries for Signal-to-Noise minimums,
+                      #parts-per-million flexibility, and area minimums."),
+                      #actionButton("first.flags", "SN, PPM, Area flags"),
+                      #br(),
+                      #br(),
 
-                      helpText("Flag any rows with values that fall outside of the given Retention Time Range."),
-                      actionButton("RT.flags", "Retention Time flags"),
-                      br(),
-                      br(),
+                      # helpText("Flag any rows with values that fall outside of the given Retention Time Range."),
+                      # actionButton("RT.flags", "Retention Time flags"),
+                      # br(),
+                      # br(),
 
-                      helpText("Flag any rows with values that are larger than the maximum blank value."),
-                      actionButton("blk.flags", "Blank flags"),
-                      br(),
-                      br(),
+                      # helpText("Flag any rows with values that are larger than the maximum blank value."),
+                      # actionButton("blk.flags", "Blank flags"),
+                      # br(),
+                      # br(),
 
-                      helpText("Check if standards existed in the original set. If so, join those rows to the bottom of the modified dataset."),
-                      actionButton("Stds", "Re-add standards"),
-                      br(),
-                      br(),
+                      # helpText("Check if standards existed in the original set. If so, join those rows to the bottom of the modified dataset."),
+                      # actionButton("Stds", "Re-add standards"),
+                      # br(),
+                      # br(),
 
                       helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC' and system date attached to the original filename."),
-                      actionButton("addrows", "Add parameters directly to csv."),
+                      #actionButton("addrows", "Add parameters directly to csv."),
                       downloadButton("QC_file", "Download your QC file here"),
                       downloadButton("Parameters", "Download your parameter file here"),
                       br(),
                       br()
-                          )
-                        )
-               ),
-
-               # TQS tabPanel -----------------------------------------------------------------
-               tabPanel("Triple-Quadrupole",
-                        helpText("Stay tuned for future developments!")
-               )
+                      )
+                      )
+                      )
                             )
                   )))
 
@@ -281,10 +275,10 @@ server <- function(input, output, session) {
     skyline.file()
   }, options = list(pageLength = 10))
 
-  supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
-  output$supporting1 <- renderDataTable({
-    supporting.file()
-  }, options = list(pageLength = 10))
+  #supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
+  #output$supporting1 <- renderDataTable({
+  #  supporting.file()
+  #}, options = list(pageLength = 10))
 
 
   # First transform event -----------------------------------------------------------------
@@ -337,81 +331,81 @@ server <- function(input, output, session) {
   })
 
   # Blank Reference Table event -----------------------------------------------------------------
-  observeEvent(input$Blk, {
-    Blank.Ratio.References <<- reactive({skyline.file() %>%
-        filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
-        select(-Protein.Name, -Protein) %>%
-        rename(Mass.Feature = Precursor.Ion.Name) %>%
-        rename(Blank.Name = Replicate.Name,
-               Blank.Area = Area) %>%
-        select(Blank.Name, Mass.Feature, Blank.Area) %>%
-        left_join(supporting.file(), by = "Blank.Name") %>%
-        group_by(Mass.Feature, Replicate.Name) %>%
-        filter(row_number() == 1) %>%
-        unique()
-      #select(Blank.Name, Mass.Feature, Blank.Area) %>%
-    })
-
-    output$Blank.Ratio.References <- renderDataTable({
-      Blank.Ratio.References()
-    }, options = list(pageLength = 10))
-  })
+  # observeEvent(input$Blk, {
+  #   Blank.Ratio.References <<- reactive({skyline.file() %>%
+  #       filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
+  #       select(-Protein.Name, -Protein) %>%
+  #       rename(Mass.Feature = Precursor.Ion.Name) %>%
+  #       rename(Blank.Name = Replicate.Name,
+  #              Blank.Area = Area) %>%
+  #       select(Blank.Name, Mass.Feature, Blank.Area) %>%
+  #       left_join(supporting.file(), by = "Blank.Name") %>%
+  #       group_by(Mass.Feature, Replicate.Name) %>%
+  #       filter(row_number() == 1) %>%
+  #       unique()
+  #     #select(Blank.Name, Mass.Feature, Blank.Area) %>%
+  #   })
+  #
+  #   output$Blank.Ratio.References <- renderDataTable({
+  #     Blank.Ratio.References()
+  #   }, options = list(pageLength = 10))
+  # })
 
   # First flags event -----------------------------------------------------------------
-  observeEvent(input$first.flags, {
-    skyline.first.flagged <<- reactive({skyline.transformed() %>%
-        filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
-        mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
-        mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
-        mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
-    })
-    output$skyline1 <- renderDataTable({
-      skyline.first.flagged()
-    }, options = list(pageLength = 10))
-  })
+  # observeEvent(input$first.flags, {
+  #   skyline.first.flagged <<- reactive({skyline.transformed() %>%
+  #       filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
+  #       mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
+  #       mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
+  #       mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
+  #   })
+  #   output$skyline1 <- renderDataTable({
+  #     skyline.first.flagged()
+  #   }, options = list(pageLength = 10))
+  # })
 
   # RT flags event -----------------------------------------------------------------
-  observeEvent(input$RT.flags, {
-    skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-        left_join(Retention.Time.References(), by = "Mass.Feature") %>%
-        mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
-        select(-RT.min, -RT.max)
-    })
-    output$skyline1 <- renderDataTable({
-      skyline.RT.flagged()
-    })
-  })
+  # observeEvent(input$RT.flags, {
+  #   skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
+  #       left_join(Retention.Time.References(), by = "Mass.Feature") %>%
+  #       mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
+  #       select(-RT.min, -RT.max)
+  #   })
+  #   output$skyline1 <- renderDataTable({
+  #     skyline.RT.flagged()
+  #   })
+  # })
 
   # Blank flags event -----------------------------------------------------------------
-  observeEvent(input$blk.flags, {
-    skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
-        # TODO (rlionheart): Same issue as Retention time. How to reference another table?
-        # TODO (rlionheart): also double check this table itself- is it correct?
-        left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
-        mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
-        select(-Blank.Name, -Blank.Area)
-    })
-    output$skyline1 <- renderDataTable({
-      skyline.blk.flagged()
-    })
-  })
+  # observeEvent(input$blk.flags, {
+  #   skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
+  #       # TODO (rlionheart): Same issue as Retention time. How to reference another table?
+  #       # TODO (rlionheart): also double check this table itself- is it correct?
+  #       left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
+  #       mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
+  #       select(-Blank.Name, -Blank.Area)
+  #   })
+  #   output$skyline1 <- renderDataTable({
+  #     skyline.blk.flagged()
+  #   })
+  # })
 
   # Re-adding stds event -----------------------------------------------------------------
-  observeEvent(input$Stds, {
-    Stds.test <- grepl("_Std_", skyline.file()$Replicate.Name)
-    if (any(Stds.test == TRUE)) {
-      output$std.status <- renderText({"Standards in set. Joining them to the bottom of the dataset!"})
-      standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
-      skyline.stds.added <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
-    } else {
-      output$std.status <- renderText({"No standards exist in this set. Table remains as is."})
-      skyline.stds.added <<- reactive(skyline.blk.flagged())
-    }
-
-    output$skyline1 <- renderDataTable({
-      skyline.stds.added()
-    })
-  })
+  # observeEvent(input$Stds, {
+  #   Stds.test <- grepl("_Std_", skyline.file()$Replicate.Name)
+  #   if (any(Stds.test == TRUE)) {
+  #     output$std.status <- renderText({"Standards in set. Joining them to the bottom of the dataset!"})
+  #     standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
+  #     skyline.stds.added <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
+  #   } else {
+  #     output$std.status <- renderText({"No standards exist in this set. Table remains as is."})
+  #     skyline.stds.added <<- reactive(skyline.blk.flagged())
+  #   }
+  #
+  #   output$skyline1 <- renderDataTable({
+  #     skyline.stds.added()
+  #   })
+  # })
 
   # Parameter table-----------------------------------------------------------------
   parametersReactive <- reactive({
@@ -438,7 +432,8 @@ server <- function(input, output, session) {
       paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
     },
     content = function(file) {
-      write.csv(final.skyline(), file)
+      #write.csv(final.skyline(), file)
+      write.csv(skyline.transformed(), file)
     }
   )
 
