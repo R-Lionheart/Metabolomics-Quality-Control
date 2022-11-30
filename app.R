@@ -163,38 +163,49 @@ ui <- fluidPage(useShinyjs(),
 
 
                # Browse tabPanel -----------------------------------------------------------------
+               tabPanel("Tidy Data",
+                        fluidRow(
+                          column(6,
+                          helpText("Click the 'Tidy Data' button to transform original character column classes to numeric values and drop/rename unnecessary columns."),
+                          actionButton("transform", "Tidy Data"),
+                          br(),
+                          br(),
+                          strong("Dataset Columns and Classes"),
+                          textOutput("classes_status"),
+                          verbatimTextOutput("classes"),
+                          tags$head(tags$style("#classes_status{color: #26337a; font-size: 17px;}"))
+                        ),
+                        column(6,
+                               helpText("Click the 'Update Compound Names' button to ensure the compounds reflect the latest Ingalls Standards name."),
+                               actionButton("replacenames", "Update Compoud Names"),
+                               br(),
+                               br(),
+                               strong("Unique compound names"),
+                               textOutput("names_status"),
+                               verbatimTextOutput("names"),
+                               tags$head(tags$style("#names_status{color: #26337a; font-size: 17px;}"))
+                               ),
+                        )
+               ),
                tabPanel("Browse Data",
                         fluidRow(
-                          column(5, helpText("Upload data to see your tables and visualizations here!."),
+                          column(6, helpText("Upload data to see your tables and visualizations here!."),
                                  absolutePanel(
                                    h3("Skyline file"),
                                    dataTableOutput("skyline1")
                                    )
                                  )
-                          ),
-
-
-                        fluidRow(
-                          column(5, helpText("A graph will go here"),
-                                 absolutePanel(
-                                   h3("Here is my graph"),
-                                   ### TODO graph output ###
-                                 ))
-
-                        )
+                          )
                ),
-               tabPanel("Transform and QC Data",
-                        helpText("Transform original character column classes to numeric values. Drop unnecessary columns."),
-                        actionButton("transform", "Change variable classes"),
-                        wellPanel(strong("Dataset Classes"),
-                                  textOutput("classes_status"),
-                                  verbatimTextOutput("classes"),
-                                  tags$head(tags$style("#classes_status{color: #26337a; font-size: 17px;}")),
-                                  column(4,
-                                         br(),
-                                         wellPanel(strong("Retention Time Reference Table"), dataTableOutput("Retention.Time.References")),
-                                         br()
-                                  ),
+               tabPanel("QC Data",
+
+                        wellPanel(
+                          column(4,
+                                 br(),
+                                 wellPanel(strong("Retention Time Reference Table"),
+                                           dataTableOutput("Retention.Time.References")),
+                                 br()
+                          ),
 
                                   column(4,
                                          br(),
@@ -247,10 +258,10 @@ ui <- fluidPage(useShinyjs(),
                                          downloadButton("Parameters", "Download your parameter file here"),
                                          br(),
                                          br()
-                                  )
-                        )),
-                            )
-                  )))
+                                         )
+                          )
+                        ),
+               ))))
 
 # Server function -----------------------------------------------------------------
 server <- function(input, output, session) {
@@ -265,6 +276,8 @@ server <- function(input, output, session) {
 
   output$classes_status <- renderText({paste("Before transformation:")})
   output$classes        <- renderText({paste(colnames(skyline.file()), sapply(skyline.file(), class), " \n")})
+  output$names_status   <- renderText({paste("Original names:")})
+  output$names          <- renderText({paste(unique(skyline.file()$Precursor.Ion.Name), " \n")})
   output$runtypes       <- renderText({paste(unique(tolower(str_extract(skyline.file()$Replicate.Name, "(?<=_)[^_]+(?=_)"))))})
   output$SN             <- renderText({"Add those flags"})
 
@@ -282,7 +295,7 @@ server <- function(input, output, session) {
   #}, options = list(pageLength = 10))
 
 
-  # First transform event -----------------------------------------------------------------
+  # First transform event: columns -----------------------------------------------------------------
   observeEvent(input$transform, {
     skyline.transformed <<- reactive({skyline.file() %>%
         select(-Protein.Name, -Protein) %>%
@@ -299,6 +312,21 @@ server <- function(input, output, session) {
 
     output$classes_status <- renderText({paste("After transformation:")})
     output$classes <- renderText({paste(colnames(skyline.transformed()), ":", sapply(skyline.transformed(), class), " \n")})
+  })
+
+  # Second transform event: names -----------------------------------------------------------------
+  observeEvent(input$replacenames, {
+    skyline.names.changed <<- reactive({skyline.transformed() %>%
+
+        mutate(Mass.Feature = str_replace(Mass.Feature, "Acetyl-L-carnitine", "yay"))
+    })
+
+    output$skyline1 <- renderDataTable({
+      skyline.names.changed()
+    }, options = list(pageLength = 10))
+
+    output$names_status <- renderText({paste("Updated names:")})
+    output$names <- renderText({paste(unique(skyline.names.changed()$Mass.Feature), " \n")})
   })
 
   # Retention Time Table event -----------------------------------------------------------------
