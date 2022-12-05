@@ -65,12 +65,12 @@ ui <- fluidPage(useShinyjs(),
                                          helpText("Select whether your file was run on the TQS or QE instrument.
                                                   See Information tab for more details."),
 
-                                         csvFileInput("skyline.file", h5("Output file from Skyline.")),
-                                         #csvFileInput("supporting.file", h5("QE: Blank matcher csv. TQS: Master compound csv.")),
+                                         csvFileInput("skyline.file", h5("Output file from Skyline")),
+                                         csvFileInput("supporting.file", h5("Latest Ingalls Lab standards sheet")),
                                          hr(),
 
-                                         textInput("std.tags", h5("Standard tag input (QE only)"),
-                                                   value = "Enter samples..."),
+                                         # textInput("std.tags", h5("Standard tag input (QE only)"),
+                                         #           value = "Enter samples..."),
                                          wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
                                          hr(),
 
@@ -157,12 +157,11 @@ ui <- fluidPage(useShinyjs(),
                hr(),
 
                p("Along the left-hand side panel, follow the steps for each parameter and pick the values that are appropriate for your data. These values are reactive and can be changed throughout
-               the analysis process. For QE, you have the option of adding standard tags, which will filter standards for user-defined retention time. This can also be left blank if you would
-               like to use all standards from the run.",
+               the analysis process.",
                style = "font-family: 'times'; font-size:18px")),
 
 
-               # Browse tabPanel -----------------------------------------------------------------
+               # Tidy tabPanel -----------------------------------------------------------------
                tabPanel("Tidy Data",
                         fluidRow(
                           column(6,
@@ -187,6 +186,7 @@ ui <- fluidPage(useShinyjs(),
                                ),
                         )
                ),
+               # Browse tabPanel -----------------------------------------------------------------
                tabPanel("Browse Data",
                         fluidRow(
                           column(6, helpText("Upload data to see your tables and visualizations here!."),
@@ -197,77 +197,84 @@ ui <- fluidPage(useShinyjs(),
                                  )
                           )
                ),
+               # QC tabPanel -----------------------------------------------------------------
                tabPanel("QC Data",
 
-                        wellPanel(
-                          column(4,
+                        fluidRow(
+                          h3(id = "analysis-start", "Create QC Reference Tables Here!"),
+                          tags$style(HTML("#analysis-start{color: #26337a;}")),
+                          br(),
+                          column(7, helpText("Create a table of acceptable Retention Time Ranges"),
+                                 actionButton("RT.Table", "Create Retention Time References"),
+                                 br(),
+                                 br(),
+
+                                 #helpText("Flag those rows that fall outside the user-defined boundaries for Signal-to-Noise minimums,
+                                 #parts-per-million flexibility, and area minimums."),
+                                 #actionButton("first.flags", "SN, PPM, Area flags"),
+                                 #br(),
+                                 #br(),
+
+                                 # helpText("Check if standards existed in the original set. If so, join those rows to the bottom of the modified dataset."),
+                                 # actionButton("Stds", "Re-add standards"),
+                                 # br(),
+                                 # br(),
+
+
                                  br(),
                                  wellPanel(strong("Retention Time Reference Table"),
                                            dataTableOutput("Retention.Time.References")),
                                  br()
                           ),
-
-                                  column(4,
-                                         br(),
-                                         wellPanel(strong("Blanks Reference Table"), dataTableOutput("Blank.Ratio.References"))
-                                  ),
-
-                                  column(2,
-                                         h3("Parameter Table"),
-                                         dataTableOutput("parameterTable"),
-
-                                         h3(id = "analysis-start", "Start analysis here!"),
-                                         tags$style(HTML("#analysis-start{color: #26337a;}")),
-                                         br(),
-                                         br(),
-
-                                         helpText("Create a table of acceptable Retention Time Ranges"),
-                                         actionButton("RT.Table", "Create Retention Time References"),
-                                         br(),
-                                         br(),
-
-                                         # helpText("Create a table of blank references for creation of blank flags."),
-                                         # actionButton("Blk", "Create Blank Area References"),
-                                         # br(),
-                                         # br(),
-
-                                         #helpText("Flag those rows that fall outside the user-defined boundaries for Signal-to-Noise minimums,
-                                         #parts-per-million flexibility, and area minimums."),
-                                         #actionButton("first.flags", "SN, PPM, Area flags"),
-                                         #br(),
-                                         #br(),
-
-                                         # helpText("Flag any rows with values that fall outside of the given Retention Time Range."),
-                                         # actionButton("RT.flags", "Retention Time flags"),
-                                         # br(),
-                                         # br(),
-
-                                         # helpText("Flag any rows with values that are larger than the maximum blank value."),
-                                         # actionButton("blk.flags", "Blank flags"),
-                                         # br(),
-                                         # br(),
-
-                                         # helpText("Check if standards existed in the original set. If so, join those rows to the bottom of the modified dataset."),
-                                         # actionButton("Stds", "Re-add standards"),
-                                         # br(),
-                                         # br(),
-
-                                         helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC' and system date attached to the original filename."),
-                                         #actionButton("addrows", "Add parameters directly to csv."),
-                                         downloadButton("QC_file", "Download your QC file here"),
-                                         downloadButton("Parameters", "Download your parameter file here"),
-                                         br(),
-                                         br()
-                                         )
+                          column(4,
+                                 wellPanel(h3("Parameter Table"),
+                                 dataTableOutput("parameterTable")),
+                                 br(),
+                                 )
+                          ),
+                        fluidRow(
+                          column(7,
+                                 br(),
+                                 helpText("Create a table of blank references for creation of blank flags."),
+                                 actionButton("Blk", "Create Blank Area References"),
+                                 br(),
+                                 br(),
+                                 wellPanel(strong("Blanks Reference Table"),
+                                           dataTableOutput("Blank.Ratio.References")
+                                 )
                           )
+                        )
                         ),
-               ))))
+               tabPanel("Flag Data",
+                        helpText("Flag any rows with values that fall outside of the given Retention Time Range."),
+                        actionButton("RT.flags", "Retention Time flags"),
+                        textOutput("RT_flags_status"),
+                        br(),
+                        br(),
+                        helpText("next flags here"),
+                        helpText("Flag any rows with values that are larger than the maximum blank value."),
+                        actionButton("blk.flags", "Blank flags"),
+                        br(),
+                        br()),
+               tabPanel("Download Data",
+                        helpText("Download your completed data here!"),
+                        column(10,
+                               helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC' and system date attached to the original filename."),
+                               #actionButton("addrows", "Add parameters directly to csv."),
+                               downloadButton("QC_file", "Download your QC file here"),
+                               downloadButton("Parameters", "Download your parameter file here"),
+                               br(),
+                               br()
+                               )
+                        )
+               )
+)))
 
 # Server function -----------------------------------------------------------------
 server <- function(input, output, session) {
 
   # Paramter entry, transformation, runtype ID and initial flags -----------------------------------------------------------------
-  output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
+  #output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
   output$minimum   <- renderText({paste("You have selected", input$area.min, "as area")})
   output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility")})
   output$blank     <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum")})
@@ -289,10 +296,10 @@ server <- function(input, output, session) {
     skyline.file()
   }, options = list(pageLength = 10))
 
-  #supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
-  #output$supporting1 <- renderDataTable({
-  #  supporting.file()
-  #}, options = list(pageLength = 10))
+  supporting.file <- callModule(csvFile, "supporting.file", stringsAsFactors = FALSE)
+  output$supporting1 <- renderDataTable({
+   supporting.file()
+  }, options = list(pageLength = 10))
 
 
   # First transform event: columns -----------------------------------------------------------------
@@ -317,8 +324,14 @@ server <- function(input, output, session) {
   # Second transform event: names -----------------------------------------------------------------
   observeEvent(input$replacenames, {
     skyline.names.changed <<- reactive({skyline.transformed() %>%
-
-        mutate(Mass.Feature = str_replace(Mass.Feature, "Acetyl-L-carnitine", "yay"))
+          rename(Compound_Name_Original = Mass.Feature) %>%
+          left_join(supporting.file() %>% select(Compound_Name, Compound_Name_Original)) %>%
+          rename(Compound.Name_new = Compound_Name,
+                 Mass.Feature = Compound_Name_Original) %>%
+          mutate(Compound.Name_new = if_else(is.na(Compound.Name_new), Mass.Feature, Compound.Name_new)) %>%
+          select(-Mass.Feature) %>%
+          rename(Mass.Feature = Compound.Name_new) %>%
+          select(Replicate.Name, Mass.Feature, everything())
     })
 
     output$skyline1 <- renderDataTable({
@@ -326,16 +339,16 @@ server <- function(input, output, session) {
     }, options = list(pageLength = 10))
 
     output$names_status <- renderText({paste("Updated names:")})
-    output$names <- renderText({paste(unique(skyline.names.changed()$Mass.Feature), " \n")})
+    output$names <- renderText({paste(unique(skyline.names.changed()$Mass.Feature), " \n")}) ## Should be pasted with old
   })
 
   # Retention Time Table event -----------------------------------------------------------------
   observeEvent(input$RT.Table, {
-    Stds.test <- grepl("_Std_", skyline.transformed()$Replicate.Name)
+    Stds.test <- grepl("_Std_", skyline.names.changed()$Replicate.Name)
     if (any(Stds.test == TRUE)) {
-      Retention.Time.References <<- reactive({skyline.transformed() %>%
+      Retention.Time.References <<- reactive({skyline.names.changed() %>%
           select(Replicate.Name, Mass.Feature, Retention.Time) %>%
-          mutate(Run.Type = (tolower(str_extract(skyline.transformed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>%
+          mutate(Run.Type = (tolower(str_extract(skyline.names.changed()$Replicate.Name, "(?<=_)[^_]+(?=_)")))) %>%
           group_by(Mass.Feature) %>%
           filter(Run.Type == "std") %>%
           mutate(RT.min = min(Retention.Time, na.rm = TRUE)) %>%
@@ -344,7 +357,7 @@ server <- function(input, output, session) {
           unique()
       })
     } else {
-      Retention.Time.References <<- reactive({skyline.transformed() %>%
+      Retention.Time.References <<- reactive({skyline.names.changed() %>%
           filter(Replicate.Name %in% input$std.tags) %>%
           select(Replicate.Name, Mass.Feature, Retention.Time) %>%
           group_by(Mass.Feature) %>%
@@ -356,29 +369,33 @@ server <- function(input, output, session) {
 
     output$Retention.Time.References <- renderDataTable({
       Retention.Time.References()
-    }, options = list(pageLength = 10))
+    }, options = list(pageLength = 5))
   })
 
   # Blank Reference Table event -----------------------------------------------------------------
-  # observeEvent(input$Blk, {
-  #   Blank.Ratio.References <<- reactive({skyline.file() %>%
-  #       filter(Replicate.Name %in% supporting.file()$Blank.Name) %>%
-  #       select(-Protein.Name, -Protein) %>%
-  #       rename(Mass.Feature = Precursor.Ion.Name) %>%
-  #       rename(Blank.Name = Replicate.Name,
-  #              Blank.Area = Area) %>%
-  #       select(Blank.Name, Mass.Feature, Blank.Area) %>%
-  #       left_join(supporting.file(), by = "Blank.Name") %>%
-  #       group_by(Mass.Feature, Replicate.Name) %>%
-  #       filter(row_number() == 1) %>%
-  #       unique()
-  #     #select(Blank.Name, Mass.Feature, Blank.Area) %>%
-  #   })
-  #
-  #   output$Blank.Ratio.References <- renderDataTable({
-  #     Blank.Ratio.References()
-  #   }, options = list(pageLength = 10))
-  # })
+  observeEvent(input$Blk, {
+    Blank.Ratio.References <<- reactive({skyline.names.changed() %>%
+          filter(str_detect(Replicate.Name, regex("Blk", ignore_case = TRUE))) %>%
+          select(Mass.Feature, Area) %>%
+          group_by(Mass.Feature) %>%
+          mutate(Blank.min = min(Area, na.rm = TRUE)) %>%
+          mutate(Blank.max = max(Area, na.rm = TRUE)) %>%
+          select(-Area) %>%
+          unique()
+    })
+      Test <<- reactive({skyline.names.changed() %>%
+          filter(str_detect(Replicate.Name, regex("Blk", ignore_case = TRUE))) %>%
+          select(Mass.Feature, Replicate.Name, Area) %>%
+          group_by(Mass.Feature) %>%
+          mutate(Blank.min = min(Area, na.rm = TRUE)) %>%
+          mutate(Blank.max = max(Area, na.rm = TRUE)) %>%
+          unique() ##TODO START HERE
+
+    })
+    output$Blank.Ratio.References <- renderDataTable({
+      Blank.Ratio.References()
+    }, options = list(pageLength = 5))
+  })
 
   # First flags event -----------------------------------------------------------------
   # observeEvent(input$first.flags, {
@@ -394,30 +411,31 @@ server <- function(input, output, session) {
   # })
 
   # RT flags event -----------------------------------------------------------------
-  # observeEvent(input$RT.flags, {
-  #   skyline.RT.flagged <<- reactive({skyline.first.flagged() %>%
-  #       left_join(Retention.Time.References(), by = "Mass.Feature") %>%
-  #       mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
-  #       select(-RT.min, -RT.max)
-  #   })
-  #   output$skyline1 <- renderDataTable({
-  #     skyline.RT.flagged()
-  #   })
-  # })
+  observeEvent(input$RT.flags, {
+    skyline.RT.flagged <<- reactive({skyline.names.changed() %>%
+        left_join(Retention.Time.References(), by = "Mass.Feature") %>%
+        mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
+        select(-RT.min, -RT.max)
+    })
+    output$skyline1 <- renderDataTable({
+      skyline.RT.flagged()
+    })
+    output$RT_flags_status <- renderText({paste("Flags added to Skyline table!")})
+
+  })
 
   # Blank flags event -----------------------------------------------------------------
-  # observeEvent(input$blk.flags, {
-  #   skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
-  #       # TODO (rlionheart): Same issue as Retention time. How to reference another table?
-  #       # TODO (rlionheart): also double check this table itself- is it correct?
-  #       left_join(Blank.Ratio.References(), by = c("Replicate.Name", "Mass.Feature")) %>%
-  #       mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
-  #       select(-Blank.Name, -Blank.Area)
-  #   })
-  #   output$skyline1 <- renderDataTable({
-  #     skyline.blk.flagged()
-  #   })
-  # })
+  observeEvent(input$blk.flags, {
+
+    skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
+        left_join(Test(), by = c("Replicate.Name", "Mass.Feature")) %>%
+        mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
+        select(-Blank.Name, -Blank.Area)
+    })
+    output$skyline1 <- renderDataTable({
+      skyline.blk.flagged()
+    })
+  })
 
   # Re-adding stds event -----------------------------------------------------------------
   # observeEvent(input$Stds, {
@@ -444,7 +462,7 @@ server <- function(input, output, session) {
 
   output$parameterTable <- renderDataTable({
     parametersReactive()
-  })
+  }, options = list(dom = 't'))
 
   observeEvent(input$addrows, {
     final.skyline <<- reactive({skyline.stds.added() %>%
