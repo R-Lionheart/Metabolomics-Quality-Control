@@ -254,6 +254,7 @@ ui <- fluidPage(useShinyjs(),
                         helpText("next flags here"),
                         helpText("Flag any rows with values that are larger than the maximum blank value."),
                         actionButton("blk.flags", "Blank flags"),
+                        textOutput("Blank_flags_status"),
                         br(),
                         br()),
                tabPanel("Download Data",
@@ -383,15 +384,7 @@ server <- function(input, output, session) {
           select(-Area) %>%
           unique()
     })
-      Test <<- reactive({skyline.names.changed() %>%
-          filter(str_detect(Replicate.Name, regex("Blk", ignore_case = TRUE))) %>%
-          select(Mass.Feature, Replicate.Name, Area) %>%
-          group_by(Mass.Feature) %>%
-          mutate(Blank.min = min(Area, na.rm = TRUE)) %>%
-          mutate(Blank.max = max(Area, na.rm = TRUE)) %>%
-          unique() ##TODO START HERE
 
-    })
     output$Blank.Ratio.References <- renderDataTable({
       Blank.Ratio.References()
     }, options = list(pageLength = 5))
@@ -414,26 +407,42 @@ server <- function(input, output, session) {
   observeEvent(input$RT.flags, {
     skyline.RT.flagged <<- reactive({skyline.names.changed() %>%
         left_join(Retention.Time.References(), by = "Mass.Feature") %>%
+        group_by(Mass.Feature) %>%
         mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
         select(-RT.min, -RT.max)
     })
     output$skyline1 <- renderDataTable({
       skyline.RT.flagged()
     })
-    output$RT_flags_status <- renderText({paste("Flags added to Skyline table!")})
+    output$RT_flags_status <- renderText({
+      paste("Retention time flags added to Skyline table!")
+    })
 
   })
 
   # Blank flags event -----------------------------------------------------------------
   observeEvent(input$blk.flags, {
 
+    BlanktoJoin <<- reactive({skyline.names.changed() %>%
+        filter(str_detect(Replicate.Name, regex("Blk", ignore_case = TRUE))) %>%
+        select(Mass.Feature, Area) %>%
+        rename(Blank.Area = Area) %>%
+        group_by(Mass.Feature) %>%
+        mutate(Blank.max = max(Blank.Area, na.rm = TRUE)) %>%
+        unique()
+
+    })
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
-        left_join(Test(), by = c("Replicate.Name", "Mass.Feature")) %>%
-        mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.Area)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
-        select(-Blank.Name, -Blank.Area)
+        left_join(BlanktoJoin(), by = c("Mass.Feature")) %>%
+        group_by(Mass.Feature) %>%
+        mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.max)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
+        select(-Blank.max, -Blank.Area)
     })
     output$skyline1 <- renderDataTable({
       skyline.blk.flagged()
+    })
+    output$Blank_flags_status <- renderText({
+      paste("Blank flags added to Skyline table!")
     })
   })
 
@@ -479,8 +488,7 @@ server <- function(input, output, session) {
       paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
     },
     content = function(file) {
-      #write.csv(final.skyline(), file)
-      write.csv(skyline.transformed(), file)
+      write.csv(skyline.blk.flagged(), file)
     }
   )
 
