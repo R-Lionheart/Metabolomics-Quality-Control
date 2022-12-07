@@ -6,21 +6,23 @@ library(tidyverse)
 
 options(scipen = 999)
 
+# Modules -----------------------------------------------------------------
+
 csvFileInput <- function(id, label = "CSV file") {
   ns <- NS(id)
-
   tagList(
     fileInput(ns("file"), label),
     checkboxInput(ns("heading"), "Has header", value = TRUE)
-  )
-}
+    )
+  }
 
 promptForFile <- function(input, output, session) {
   return(reactive({
     # If no file is selected, don't do anything
     validate(need(input$file, message = FALSE))
     input$file
-  }))
+    })
+  )
 }
 
 csvFile <- function(input, output, session, stringsAsFactors) {
@@ -33,7 +35,7 @@ csvFile <- function(input, output, session, stringsAsFactors) {
              stringsAsFactors = stringsAsFactors)
   })
 
-  # We can run observers in here if we want to
+  # Run observer
   observe({
     msg <- sprintf("File %s was uploaded", userFile()$name)
     cat(msg, "\n")
@@ -60,41 +62,48 @@ ui <- fluidPage(useShinyjs(),
                 sidebarLayout(
                   sidebarPanel(width = 3,
                                wellPanel(id = "tPanel", style = "overflow-y:scroll; max-height: 500",
-                                         helpText("Upload your file(s) below. Please confirm if your file is MSDIAL or Skyline."),
-
-                                         helpText("Select whether your file was run on the TQS or QE instrument.
-                                                  See Information tab for more details."),
+                                         helpText("Upload your files below. Your first file should be
+                                                  from Skyline, and the second should be the latest
+                                                  Ingalls Standards sheet. Please see the Information
+                                                  tab for more details on both of these files."),
 
                                          csvFileInput("skyline.file", h5("Output file from Skyline")),
                                          csvFileInput("supporting.file", h5("Latest Ingalls Lab standards sheet")),
                                          hr(),
 
-                                         # textInput("std.tags", h5("Standard tag input (QE only)"),
-                                         #           value = "Enter samples..."),
-                                         wellPanel(strong("Your run types are:"), textOutput("runtypes"), hr(), textOutput("std.status")),
+                                         wellPanel(helpText("Below are the run types included in your file.
+                                                            'std' = standard run, 'smp' = sample run,
+                                                            'poo' = pooled run, 'blk' = blank run."),
+                                                   strong("Your run types are:"),
+                                                   textOutput("runtypes")),
                                          hr(),
 
-                                         helpText("Pick the minimum height to be counted as a 'real' peak (QE suggestion: HILIC - 1000, Cyano - 5000)"),
+                                         helpText("Pick the minimum height to be counted as a 'real' peak
+                                                  (Suggestion: HILIC - 1000, Cyano - 5000)"),
                                          sliderInput("area.min", h5("Area Minimum"),
                                                      min = 1000, step = 1000, max = 5000, value = 1000),
                                          hr(),
 
-                                         helpText("Pick retention time (RT) flexibility (QE suggestion: +/- 0.4 min for HILIC, +/- 0.2 min for Cyano)"),
+                                         helpText("Pick retention time (RT) flexibility
+                                                  (Suggestion: +/- 0.4 min for HILIC, +/- 0.2 min for Cyano)"),
                                          sliderInput("RT.flex", h5("Retention Time Flexibility"),
                                                      min = 0.0, step = 0.1, max = 1.0, value = 0.2),
                                          hr(),
 
-                                         helpText("Pick signal size comparison between sample and blank to merit inclusion (QE suggestion: +/- 0.2)"),
+                                         helpText("Pick signal size comparison between sample and blank to merit inclusion
+                                                  (Suggestion: +/- 0.2)"),
                                          sliderInput("blank.ratio.max", h5("Blank Ratio Maximum"),
                                                      min = 0.0, step = 0.1, max = 0.5, value = 0.3),
                                          hr(),
 
-                                         helpText("Pick acceptable signal to noise ratio value. Note: broader peaks create more background noise(QE suggestion: 5 for Cyano, 4 for HILIC)"),
+                                         helpText("Pick acceptable signal to noise ratio value. Note: broader peaks create more background noise
+                                                  (Suggestion: 5 for Cyano, 4 for HILIC)"),
                                          sliderInput("SN.min", h5("Signal to Noise Ratio"),
                                                      min = 1, step = 1, max = 5, value = 3),
                                          hr(),
 
-                                         helpText("Pick an absolute value for a cutoff for parts per million (ppm) (QE suggestion: 7)"),
+                                         helpText("Pick an absolute value for a cutoff for parts per million (ppm)
+                                                  (Suggestion: 7)"),
                                          sliderInput("ppm.flex", h5("Parts per Million"),
                                                      min = 1, step = 1, max = 10, value = 5)
                                )
@@ -109,83 +118,130 @@ ui <- fluidPage(useShinyjs(),
                                                  img(src = "QC.png", height = 200, width = 200, style="display: block; margin-left: auto; margin-right: auto;"),
                                                  br(),
 
-                                                 div(p(HTML(paste0("This code, written in R, performs a user-defined quality-control check on targeted output from the open-source mass spectrometer software ",
-                                                                   a(href = "https://skyline.ms/project/home/software/Skyline/begin.view", "Skyline.")))), style = "font-family: 'times'; font-size:20px"),
-                                                 p("This application contains three tabs: an Information tab, a QExactive tab, and a TQS (Triple Quadrupole Mass Spectrometer) tab.
-               After ensuring you are using output from the correct machine, please complete the quality control", span(strong("in the following order. ")),
-               "Each step has an information section below.",
-               style = "font-family: 'times'; font-size:20px"),
-               p("1. Check your LCMS setup.",
-                 style = "font-family: 'times'; font-size:18px"),
-               p("2. Switch to the appropriate tab.",
-                 style = "font-family: 'times'; font-size:18px"),
-               p("3. Upload the correct files for your machine type.",
-                 style = "font-family: 'times'; font-size:18px"),
-               p("4. Set your quality control parameters.",
-                 style = "font-family: 'times'; font-size:18px"),
-               h2("LCMS Setup"),
-               hr(),
+                                                 div(p(HTML(paste0("This Shiny app is a GUI (graphical user interface) for
+                                                                   performing a user-defined quality-control check on output from
+                                                                   the open-source mass spectrometry software software ",
+                                                                   a(href = "https://skyline.ms/project/home/software/Skyline/begin.view",
+                                                                     "Skyline.")))), style = "font-family: 'times'; font-size:20px"),
+                                                 div(p(HTML(paste0("Combined with the latest Ingalls Standards sheet, this application will
+                                                                   perform several basic QC steps, and create a modified csv which the user
+                                                                   can download. The Ingalls standards sheet can be accessed ",
+                                                                   a(href = "https://github.com/IngallsLabUW/Ingalls_Standards",
+                                                                     "here.")))), style = "font-family: 'times'; font-size:20px"),
+                                                 p("This application contains six tabs including this Information tab:
+                                                   a Tidy Data tab, a Browse Data tab, a QC Data tab, a Flag Data tab, and a Download Data tab.
+                                                   It is usually easiest to move through the tabs ", span(strong("left to right. ")),
+                                                   "Below is a brief outline of the steps within this application,
+                                                   with more detail following",
+                                                   style = "font-family: 'times'; font-size:20px"),
 
-               div(p(HTML(paste0("Samples should be run in the following manner for the quality control code and ",
-                                 a(href = "https://github.com/IngallsLabUW/B-MIS-normalization", "B-MIS Normalization"), "- a process used for matching internal standards."))),
-                   style = "font-family: 'times'; font-size:18px"),
-               br(),
+                                                 # Steps overview -----------------------------------------------------------------
+                                                 p("1. Import your data.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 p("2. Set your QC parameters.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 p("3. Tidy your data.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 p("4. Browse data.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 p("5. Create QC reference tables.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 p("6. Flag data.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 p("7. Download data.",
+                                                   style = "font-family: 'times'; font-size:18px"),
 
-               p("Please label all samples in the following manner:", style = "font-family: 'times'; font-size:18px",
-                 span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."),
-                      ("RunType refers to whether the sample is a standard (Std), sample (Smp), pooled (poo), or blank (blk)."),
-                      style = "font-family: 'times'; font-size:18px"),
-                 p("- Standards run (all mixed) at least once at the beginning and end of the run",
-                   style = "font-family: 'times'; font-size:18px"),
-                 p("- Standards run (in representative matrix, all mixed) at least once the beginning and end of the run. Example label: 161019_Std_FirstStandardinMatrix",
-                   style = "font-family: 'times'; font-size:18px"),
-                 p("- Blanks run (preferably method/filter blanks) at least once. Example label: 161018_Blk_FirstBlank",
-                   style = "font-family: 'times'; font-size:18px"),
-                 p("- A pooled sample run at least three times throughout the run. Example label:161018_Poo_PooledSample_1",
-                   style = "font-family: 'times'; font-size:18px"),
-                 p("- Samples. Example label: Date_Smp_AdditionalID_Rep",
-                   style = "font-family: 'times'; font-size:18px")),
-               h2("File Upload "),
-               hr(),
+                                                 # Data Import -----------------------------------------------------------------
+                                                 h2("Data Import"),
+                                                 hr(),
+                                                 div(p(HTML(paste0("On the left hand side panel, upload your Skyline output file.
+                                                                   The file should be in long format. Underneath, upload the latest
+                                                                   Ingalls Standards sheet, available ",
+                                                                   a(href = "https://github.com/IngallsLabUW/Ingalls_Standards", "here,"),
+                                                                   " in order to ensure your compound names reflect the latest conventions."))),
+                                                     style = "font-family: 'times'; font-size:18px"),
+                                                 br(),
 
-               p("For QExactive: Two files are required, a raw output from Skyline and a blank matcher csv. The blank matcher is a user-made csv that matches the blanks with the appropriate samples
-               for signal to noise and blank parameter flags.",
-               style = "font-family: 'times'; font-size:18px"),
-               p("For TQS: Stay tuned!",
-                 style = "font-family: 'times'; font-size:18px"),
-               h2("Quality Control Paramters"),
-               hr(),
-
-               p("Along the left-hand side panel, follow the steps for each parameter and pick the values that are appropriate for your data. These values are reactive and can be changed throughout
-               the analysis process.",
-               style = "font-family: 'times'; font-size:18px")),
-
-
-               # Tidy tabPanel -----------------------------------------------------------------
-               tabPanel("Tidy Data",
-                        fluidRow(
-                          column(6,
-                          helpText("Click the 'Tidy Data' button to transform original character column classes to numeric values and drop/rename unnecessary columns."),
-                          actionButton("transform", "Tidy Data"),
-                          br(),
-                          br(),
-                          strong("Dataset Columns and Classes"),
-                          textOutput("classes_status"),
-                          verbatimTextOutput("classes"),
-                          tags$head(tags$style("#classes_status{color: #26337a; font-size: 17px;}"))
-                        ),
-                        column(6,
-                               helpText("Click the 'Update Compound Names' button to ensure the compounds reflect the latest Ingalls Standards name."),
-                               actionButton("replacenames", "Update Compoud Names"),
-                               br(),
-                               br(),
-                               strong("Unique compound names"),
-                               textOutput("names_status"),
-                               verbatimTextOutput("names"),
-                               tags$head(tags$style("#names_status{color: #26337a; font-size: 17px;}"))
-                               ),
-                        )
-               ),
+                                                 p("For the Skyline data, your runs must be labeled in the following format:",
+                                                   style = "font-family: 'times'; font-size:18px",
+                                                   span(strong("Date_RunType_AdditionalID (e.g. 161018_Std_FirstStandardinH20)."),
+                                                        ("RunType refers to whether the sample is a standard (std), sample (smp), pooled (poo), or blank (blk)."),
+                                                        style = "font-family: 'times'; font-size:18px")),
+                                                 # QC Parameters -----------------------------------------------------------------
+                                                 h2("QC Parameters"),
+                                                 hr(),
+                                                 p("On the left-hand side panel, enter the parameters that are appropriate for your data.
+                                                   There is more detail on the panel about each parameter. Because the parameters are reactive,
+                                                   you can change them throughout this process to see how your data is affected.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 # Tidy Data -----------------------------------------------------------------
+                                                 h2("Tidy Your Data"),
+                                                 hr(),
+                                                 p("Due to the way Skyline exports data, some munging is required. Underneath the Tidy Data tab,
+                                                   there are two buttons (Change Columns and Classes, and Update Compound Names).
+                                                   The Change Columns and Classes button will drop unnecessary columns, remove syntactically
+                                                   incorrect placeholder values from the data, and adjust the classes of all columns so operations
+                                                   can be performed on them. The Update Compound Names button will update any compound names to the
+                                                   correct versions that are used in the Ingalls Lab.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 # Browse Data -----------------------------------------------------------------
+                                                 h2("View Your Data"),
+                                                 hr(),
+                                                 p("Under the Browse Data tab, you can see your uploaded Skyline file. This is a searchable,
+                                                   reactive file that will change as you perform QC and tidying operations.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 # QC Data -----------------------------------------------------------------
+                                                 h2("Create QC Reference Tables"),
+                                                 hr(),
+                                                 p("This tab contains steps to create Reference Tables, which are then used to flag any
+                                                   data that may fall outside of the user-defined QC parameters. On the right hand side
+                                                   of the page, the Parameter table will show the user's entries from the sidebar. The
+                                                   Create Retention Time References button will create a table displaying the maximum
+                                                   and minimum values for each compound in the Skyline output data. The Create Blank Area
+                                                   References button will display a table with the maximum and minimum blank values
+                                                   for each compound.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 # Flag Data -----------------------------------------------------------------
+                                                 h2("Create Flags"),
+                                                 hr(),
+                                                 p("Under the Flag Data tab, there are buttons to add flags to the reactive Skyline data
+                                                   viewable under the Browse Data tab. The Retention Time Flags button will add a column
+                                                   that flags any runs (per compound) that fall outside of the Retention Time Reference table,
+                                                   plus or minus the user-defined parameters. The Blank Flags button flags any runs that are
+                                                   smaller than the user-defined ratio comparing the runs to the largest blank run, per compound.",
+                                                   style = "font-family: 'times'; font-size:18px"),
+                                                 # Download Data -----------------------------------------------------------------
+                                                 h2("Download Data"),
+                                                 hr(),
+                                                 p("Finally, under the Download Data tab, the user can download the modified csv,
+                                                   as well as the parameter table to record the QC parameters that were used.",
+                                                   style = "font-family: 'times'; font-size:18px")),
+                                        # Tidy tabPanel -----------------------------------------------------------------
+                                        tabPanel("Tidy Data",
+                                                 fluidRow(
+                                                   column(6, helpText("Click the 'Tidy Data' button to transform original
+                                                                      character column classes to numeric values and
+                                                                      drop/rename unnecessary columns."),
+                                                          actionButton("columnclasses", "Tidy Data"),
+                                                          br(),
+                                                          br(),
+                                                          strong("Dataset Columns and Classes"),
+                                                          textOutput("classes_status"),
+                                                          verbatimTextOutput("classes"),
+                                                          tags$head(tags$style("#classes_status{color: #26337a; font-size: 17px;}"))
+                                                          ),
+                                                   column(6, helpText("Click the 'Update Compound Names' button to ensure the compounds
+                                                                      reflect the latest Ingalls Standards name."),
+                                                          actionButton("replacenames", "Update Compoud Names"),
+                                                          br(),
+                                                          br(),
+                                                          strong("Unique compound names"),
+                                                          textOutput("names_status"),
+                                                          verbatimTextOutput("names"),
+                                                          tags$head(tags$style("#names_status{color: #26337a; font-size: 17px;}"))
+                                                          ),
+                                                   )
+                                                 ),
                # Browse tabPanel -----------------------------------------------------------------
                tabPanel("Browse Data",
                         fluidRow(
@@ -199,7 +255,6 @@ ui <- fluidPage(useShinyjs(),
                ),
                # QC tabPanel -----------------------------------------------------------------
                tabPanel("QC Data",
-
                         fluidRow(
                           h3(id = "analysis-start", "Create QC Reference Tables Here!"),
                           tags$style(HTML("#analysis-start{color: #26337a;}")),
@@ -208,24 +263,10 @@ ui <- fluidPage(useShinyjs(),
                                  actionButton("RT.Table", "Create Retention Time References"),
                                  br(),
                                  br(),
-
-                                 #helpText("Flag those rows that fall outside the user-defined boundaries for Signal-to-Noise minimums,
-                                 #parts-per-million flexibility, and area minimums."),
-                                 #actionButton("first.flags", "SN, PPM, Area flags"),
-                                 #br(),
-                                 #br(),
-
-                                 # helpText("Check if standards existed in the original set. If so, join those rows to the bottom of the modified dataset."),
-                                 # actionButton("Stds", "Re-add standards"),
-                                 # br(),
-                                 # br(),
-
-
-                                 br(),
                                  wellPanel(strong("Retention Time Reference Table"),
                                            dataTableOutput("Retention.Time.References")),
                                  br()
-                          ),
+                                 ),
                           column(4,
                                  wellPanel(h3("Parameter Table"),
                                  dataTableOutput("parameterTable")),
@@ -240,36 +281,33 @@ ui <- fluidPage(useShinyjs(),
                                  br(),
                                  br(),
                                  wellPanel(strong("Blanks Reference Table"),
-                                           dataTableOutput("Blank.Ratio.References")
+                                           dataTableOutput("Blank.Ratio.References"))
                                  )
                           )
-                        )
                         ),
-               tabPanel("Flag Data",
-                        helpText("Flag any rows with values that fall outside of the given Retention Time Range."),
-                        actionButton("RT.flags", "Retention Time flags"),
+               # Flags tabPanel -----------------------------------------------------------------
+               tabPanel("Flag Data", helpText("Flag any rows with values that fall
+                                              outside of the given Retention Time Range."),
+                        actionButton("RT.flags", "Retention Time Flags"),
                         textOutput("RT_flags_status"),
                         br(),
                         br(),
-                        helpText("next flags here"),
                         helpText("Flag any rows with values that are larger than the maximum blank value."),
-                        actionButton("blk.flags", "Blank flags"),
+                        actionButton("blk.flags", "Blank Flags"),
                         textOutput("Blank_flags_status"),
                         br(),
-                        br()),
-               tabPanel("Download Data",
-                        helpText("Download your completed data here!"),
-                        column(10,
-                               helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC' and system date attached to the original filename."),
-                               #actionButton("addrows", "Add parameters directly to csv."),
+                        br()
+                        ),
+               # Download tabPanel -----------------------------------------------------------------
+               tabPanel("Download Data", helpText("Download your completed data here!"),
+                        column(10, helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC'
+                                            and system date attached to the original filename."),
                                downloadButton("QC_file", "Download your QC file here"),
                                downloadButton("Parameters", "Download your parameter file here"),
                                br(),
-                               br()
-                               )
+                               br())
                         )
-               )
-)))
+               ))))
 
 # Server function -----------------------------------------------------------------
 server <- function(input, output, session) {
@@ -304,7 +342,7 @@ server <- function(input, output, session) {
 
 
   # First transform event: columns -----------------------------------------------------------------
-  observeEvent(input$transform, {
+  observeEvent(input$columnclasses, {
     skyline.transformed <<- reactive({skyline.file() %>%
         select(-Protein.Name, -Protein) %>%
         mutate(Retention.Time = suppressWarnings(as.numeric(as.character(Retention.Time)))) %>%
@@ -445,23 +483,6 @@ server <- function(input, output, session) {
       paste("Blank flags added to Skyline table!")
     })
   })
-
-  # Re-adding stds event -----------------------------------------------------------------
-  # observeEvent(input$Stds, {
-  #   Stds.test <- grepl("_Std_", skyline.file()$Replicate.Name)
-  #   if (any(Stds.test == TRUE)) {
-  #     output$std.status <- renderText({"Standards in set. Joining them to the bottom of the dataset!"})
-  #     standards <- skyline.transformed()[grep("Std", skyline.transformed()$Replicate.Name), ]
-  #     skyline.stds.added <<- reactive({rbind.fill((skyline.blk.flagged()), standards)})
-  #   } else {
-  #     output$std.status <- renderText({"No standards exist in this set. Table remains as is."})
-  #     skyline.stds.added <<- reactive(skyline.blk.flagged())
-  #   }
-  #
-  #   output$skyline1 <- renderDataTable({
-  #     skyline.stds.added()
-  #   })
-  # })
 
   # Parameter table-----------------------------------------------------------------
   parametersReactive <- reactive({
