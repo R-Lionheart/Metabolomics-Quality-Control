@@ -205,10 +205,13 @@ ui <- fluidPage(useShinyjs(),
                                                  h2("Create Flags"),
                                                  hr(),
                                                  p("Under the Flag Data tab, there are buttons to add flags to the reactive Skyline data
-                                                   viewable under the Browse Data tab. The Retention Time Flags button will add a column
+                                                   viewable under the Browse Data tab. The Area Flags button will flag rows where the value
+                                                   is less than the user-defined area minimym. The Retention Time Flags button will add a column
                                                    that flags any runs (per compound) that fall outside of the Retention Time Reference table,
                                                    plus or minus the user-defined parameters. The Blank Flags button flags any runs that are
-                                                   smaller than the user-defined ratio comparing the runs to the largest blank run, per compound.",
+                                                   smaller than the user-defined ratio comparing the runs to the largest blank run, per compound.
+                                                   The Signal-to-Noise Flags add flags to rows where the signal value is not significantly higher
+                                                   than the background, according to the user-defined value.",
                                                    style = "font-family: 'times'; font-size:18px"),
                                                  # Download Data -----------------------------------------------------------------
                                                  h2("Download Data"),
@@ -229,7 +232,7 @@ ui <- fluidPage(useShinyjs(),
                                                           textOutput("classes_status"),
                                                           verbatimTextOutput("classes"),
                                                           tags$head(tags$style("#classes_status{color: #26337a; font-size: 17px;}"))
-                                                          ),
+                                                   ),
                                                    column(6, helpText("Click the 'Update Compound Names' button to ensure the compounds
                                                                       reflect the latest Ingalls Standards name."),
                                                           actionButton("replacenames", "Update Compoud Names"),
@@ -239,86 +242,93 @@ ui <- fluidPage(useShinyjs(),
                                                           textOutput("names_status"),
                                                           verbatimTextOutput("names"),
                                                           tags$head(tags$style("#names_status{color: #26337a; font-size: 17px;}"))
-                                                          ),
+                                                   ),
+                                                 )
+                                        ),
+                                        # Browse tabPanel -----------------------------------------------------------------
+                                        tabPanel("Browse Data",
+                                                 fluidRow(
+                                                   column(6, helpText("Upload data to see your tables and visualizations here!."),
+                                                          absolutePanel(
+                                                            h3("Skyline file"),
+                                                            dataTableOutput("skyline1")
+                                                          )
+                                                   )
+                                                 )
+                                        ),
+                                        # QC tabPanel -----------------------------------------------------------------
+                                        tabPanel("QC Data",
+                                                 fluidRow(
+                                                   h3(id = "analysis-start", "Create QC Reference Tables Here!"),
+                                                   tags$style(HTML("#analysis-start{color: #26337a;}")),
+                                                   br(),
+                                                   column(7, helpText("Create a table of acceptable Retention Time Ranges"),
+                                                          actionButton("RT.Table", "Create Retention Time References"),
+                                                          br(),
+                                                          br(),
+                                                          wellPanel(strong("Retention Time Reference Table"),
+                                                                    dataTableOutput("Retention.Time.References")),
+                                                          br()
+                                                   ),
+                                                   column(4,
+                                                          wellPanel(h3("Parameter Table"),
+                                                                    dataTableOutput("parameterTable")),
+                                                          br(),
                                                    )
                                                  ),
-               # Browse tabPanel -----------------------------------------------------------------
-               tabPanel("Browse Data",
-                        fluidRow(
-                          column(6, helpText("Upload data to see your tables and visualizations here!."),
-                                 absolutePanel(
-                                   h3("Skyline file"),
-                                   dataTableOutput("skyline1")
-                                   )
-                                 )
-                          )
-               ),
-               # QC tabPanel -----------------------------------------------------------------
-               tabPanel("QC Data",
-                        fluidRow(
-                          h3(id = "analysis-start", "Create QC Reference Tables Here!"),
-                          tags$style(HTML("#analysis-start{color: #26337a;}")),
-                          br(),
-                          column(7, helpText("Create a table of acceptable Retention Time Ranges"),
-                                 actionButton("RT.Table", "Create Retention Time References"),
-                                 br(),
-                                 br(),
-                                 wellPanel(strong("Retention Time Reference Table"),
-                                           dataTableOutput("Retention.Time.References")),
-                                 br()
-                                 ),
-                          column(4,
-                                 wellPanel(h3("Parameter Table"),
-                                 dataTableOutput("parameterTable")),
-                                 br(),
-                                 )
-                          ),
-                        fluidRow(
-                          column(7,
-                                 br(),
-                                 helpText("Create a table of blank references for creation of blank flags."),
-                                 actionButton("Blk", "Create Blank Area References"),
-                                 br(),
-                                 br(),
-                                 wellPanel(strong("Blanks Reference Table"),
-                                           dataTableOutput("Blank.Ratio.References"))
-                                 )
-                          )
-                        ),
-               # Flags tabPanel -----------------------------------------------------------------
-               tabPanel("Flag Data", helpText("Flag any rows with values that fall
-                                              outside of the given Retention Time Range."),
-                        actionButton("RT.flags", "Retention Time Flags"),
-                        textOutput("RT_flags_status"),
-                        br(),
-                        br(),
-                        helpText("Flag any rows with values that are larger than the maximum blank value."),
-                        actionButton("blk.flags", "Blank Flags"),
-                        textOutput("Blank_flags_status"),
-                        br(),
-                        br()
-                        ),
-               # Download tabPanel -----------------------------------------------------------------
-               tabPanel("Download Data", helpText("Download your completed data here!"),
-                        column(10, helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC'
+                                                 fluidRow(
+                                                   column(7,
+                                                          br(),
+                                                          helpText("Create a table of blank references for creation of blank flags."),
+                                                          actionButton("Blk", "Create Blank Area References"),
+                                                          br(),
+                                                          br(),
+                                                          wellPanel(strong("Blanks Reference Table"),
+                                                                    dataTableOutput("Blank.Ratio.References"))
+                                                   )
+                                                 )
+                                        ),
+                                        # Flags tabPanel -----------------------------------------------------------------
+                                        tabPanel("Flag Data", helpText("Flag any rows with values that are smaller than the minimum area value."),
+                                              actionButton("Area.flags", "Area Flags"),
+                                              textOutput("Area_flags_status"),
+                                              br(),
+                                              br(),
+                                              helpText("Flag any rows with values that fall outside of the given retention time range."),
+                                              actionButton("RT.flags", "Retention Time Flags"),
+                                              textOutput("RT_flags_status"),
+                                              br(),
+                                              br(),
+                                              helpText("Flag any rows with values that are larger than the maximum blank value."),
+                                              actionButton("blk.flags", "Blank Flags"),
+                                              textOutput("Blank_flags_status"),
+                                              br(),
+                                              br(),
+                                              helpText("Flag any rows with values that fall outside the given Signal-to-Noise ratio."),
+                                              actionButton("SN.flags", "Signal-to-Noise Flags"),
+                                              textOutput("SN_flags_status"),
+                                              br(),
+                                              br()
+                                        ),
+                                        # Download tabPanel -----------------------------------------------------------------
+                                        tabPanel("Download Data", helpText("Download your completed data here!"),
+                                                 column(10, helpText("The new, QC'd file will be downloaded with the modifiers 'QEQC'
                                             and system date attached to the original filename."),
-                               downloadButton("QC_file", "Download your QC file here"),
-                               downloadButton("Parameters", "Download your parameter file here"),
-                               br(),
-                               br())
-                        )
-               ))))
+                                            downloadButton("QC_file", "Download your QC file here"),
+                                            downloadButton("Parameters", "Download your parameter file here"),
+                                            br(),
+                                            br())
+                                        )
+                            ))))
 
 # Server function -----------------------------------------------------------------
 server <- function(input, output, session) {
 
   # Paramter entry, transformation, runtype ID and initial flags -----------------------------------------------------------------
-  #output$tags      <- renderText({paste("Your tags for sample matching are (QE only): ", input$std.tags)})
   output$minimum   <- renderText({paste("You have selected", input$area.min, "as area")})
   output$retention <- renderText({paste("You have selected", input$RT.flex, "as retention time flexibility")})
   output$blank     <- renderText({paste("You have selected", input$blank.ratio.max, "as the blank ratio maximum")})
   output$signal    <- renderText({paste("You have selected", input$SN.min, "as signal to noise flexibility")})
-  output$ppm       <- renderText({paste("You have selected", input$ppm.flex, "as parts per million time flexibility")})
 
   output$classes_status <- renderText({paste("Before transformation:")})
   output$classes        <- renderText({paste(colnames(skyline.file()), sapply(skyline.file(), class), " \n")})
@@ -339,7 +349,6 @@ server <- function(input, output, session) {
   output$supporting1 <- renderDataTable({
    supporting.file()
   }, options = list(pageLength = 10))
-
 
   # First transform event: columns -----------------------------------------------------------------
   observeEvent(input$columnclasses, {
@@ -428,22 +437,24 @@ server <- function(input, output, session) {
     }, options = list(pageLength = 5))
   })
 
-  # First flags event -----------------------------------------------------------------
-  # observeEvent(input$first.flags, {
-  #   skyline.first.flagged <<- reactive({skyline.transformed() %>%
-  #       filter(Replicate.Name %in% supporting.file()$Replicate.Name) %>%
-  #       mutate(SN.Flag       = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA)) %>%
-  #       mutate(ppm.Flag      = ifelse(abs(Mass.Error.PPM) > input$ppm.flex, "ppm.Flag", NA)) %>%
-  #       mutate(area.min.Flag = ifelse((Area < input$area.min), "area.min.Flag", NA))
-  #   })
-  #   output$skyline1 <- renderDataTable({
-  #     skyline.first.flagged()
-  #   }, options = list(pageLength = 10))
-  # })
+
+  # Area flags event -----------------------------------------------------------------
+  observeEvent(input$Area.flags, {
+    skyline.area.flagged <<- reactive({skyline.names.changed() %>%
+        mutate(Area.Flag = ifelse((Area < input$area.min), "Area.Flag", NA))
+    })
+    output$skyline1 <- renderDataTable({
+      skyline.area.flagged()
+    })
+    output$Area_flags_status <- renderText({
+      paste("Area flags added to Skyline table!")
+    })
+
+  })
 
   # RT flags event -----------------------------------------------------------------
   observeEvent(input$RT.flags, {
-    skyline.RT.flagged <<- reactive({skyline.names.changed() %>%
+    skyline.RT.flagged <<- reactive({skyline.area.flagged() %>%
         left_join(Retention.Time.References(), by = "Mass.Feature") %>%
         group_by(Mass.Feature) %>%
         mutate(RT.Flag = ifelse((Retention.Time >= (RT.max + input$RT.flex) | Retention.Time <= (RT.min - input$RT.flex)), "RT.Flag", NA)) %>%
@@ -473,7 +484,7 @@ server <- function(input, output, session) {
     skyline.blk.flagged <<- reactive({skyline.RT.flagged() %>%
         left_join(BlanktoJoin(), by = c("Mass.Feature")) %>%
         group_by(Mass.Feature) %>%
-        mutate(blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.max)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
+        mutate(Blank.Flag = suppressWarnings(ifelse((as.numeric(Area) / as.numeric(Blank.max)) < input$blank.ratio.max, "blank.Flag", NA))) %>%
         select(-Blank.max, -Blank.Area)
     })
     output$skyline1 <- renderDataTable({
@@ -484,24 +495,30 @@ server <- function(input, output, session) {
     })
   })
 
+  # SN flags event -----------------------------------------------------------------
+  observeEvent(input$SN.flags, {
+    skyline.SN.flagged <<- reactive({skyline.blk.flagged() %>%
+        mutate(SN.Flag = ifelse(((Area / Background) < input$SN.min), "SN.Flag", NA))
+    })
+    output$skyline1 <- renderDataTable({
+      skyline.SN.flagged()
+    })
+    output$SN_flags_status <- renderText({
+      paste("Signal-to-Noise flags added to Skyline table!")
+    })
+
+  })
+
   # Parameter table-----------------------------------------------------------------
   parametersReactive <- reactive({
-    data.frame(Parameter= c("Area minimum", "Retention time flexibility", "Blank Ratio Maximum", "Signal to Noise Minimum", "Parts per million flexibility"),
-               Values = c(input$area.min, input$RT.flex, input$blank.ratio.max, input$SN.min, input$ppm.flex))
+    data.frame(Parameter= c("Area minimum", "Retention time flexibility", "Blank Ratio Maximum", "Signal to Noise Minimum"),
+               Values = c(input$area.min, input$RT.flex, input$blank.ratio.max, input$SN.min))
   })
 
   output$parameterTable <- renderDataTable({
     parametersReactive()
   }, options = list(dom = 't'))
 
-  observeEvent(input$addrows, {
-    final.skyline <<- reactive({skyline.stds.added() %>%
-        bind_rows(parametersReactive())
-    })
-    output$skyline1 <- renderDataTable({
-      final.skyline()
-    })
-  })
 
   # Download both files-----------------------------------------------------------------
   output$QC_file <- downloadHandler(
@@ -509,7 +526,7 @@ server <- function(input, output, session) {
       paste("QEQC_", Sys.Date(), skyline.filename(), sep = "")
     },
     content = function(file) {
-      write.csv(skyline.blk.flagged(), file)
+      write.csv(skyline.SN.flagged(), file)
     }
   )
 
