@@ -118,9 +118,8 @@ ui <- fluidPage(useShinyjs(),
                                                  img(src = "QC.png", height = 200, width = 200, style="display: block; margin-left: auto; margin-right: auto;"),
                                                  br(),
 
-                                                 div(p(HTML(paste0("This Shiny app is a GUI (graphical user interface) for
-                                                                   performing a user-defined quality-control check on output from
-                                                                   the open-source mass spectrometry software software ",
+                                                 div(p(HTML(paste0("This Shiny app is for performing a user-defined quality-control check on output from
+                                                                   the open-source mass spectrometry software ",
                                                                    a(href = "https://skyline.ms/project/home/software/Skyline/begin.view",
                                                                      "Skyline.")))), style = "font-family: 'times'; font-size:20px"),
                                                  div(p(HTML(paste0("Combined with the latest Ingalls Standards sheet, this application will
